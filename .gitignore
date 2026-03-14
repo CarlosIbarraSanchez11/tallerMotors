@@ -1,7 +1,6 @@
 .env
 # Ignorar archivos de configuración de correo y tokens
 get_oauth_token.php
-*.json
 .env
 
 # Bloquear logs
@@ -9,4 +8,6 @@ get_oauth_token.php
 error_log
 
 # bloquea la carpeta vendor
-/vendor/
+vendor/
+libs/**/vendor/
+libs/dompdf/vendor/
