@@ -7,7 +7,7 @@ include 'master/header.php';
 ?>
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold">Gestión de Proveedores 2</h4>
+        <h4 class="fw-bold">Gestión de Proveedores</h4>
         <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#modalProveedor" onclick="nuevoProveedor()">
             <i class="fa fa-plus me-2"></i> Nuevo Proveedor
         </button>
@@ -50,10 +50,10 @@ include 'master/header.php';
                                     onclick='editarProveedor(<?php echo json_encode($p); ?>)' title="Editar">
                                 <i class="fa fa-edit"></i>
                             </button>
-                            <!-- <a href="Poo/estado_proveedor.php?id=<?php echo $p['id_proveedor']; ?>&st=<?php echo $p['estado']; ?>" 
+                            <a href="Poo/estado_proveedor.php?id=<?php echo $p['id_proveedor']; ?>&st=<?php echo $p['estado']; ?>" 
                             class="btn btn-sm btn-light text-danger rounded-circle shadow-sm" title="Cambiar Estado">
                                 <i class="fa fa-power-off"></i>
-                            </a> -->
+                            </a>
                         </td>
                     </tr>
                     <?php endwhile; ?>
