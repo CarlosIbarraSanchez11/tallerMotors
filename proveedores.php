@@ -50,10 +50,10 @@ include 'master/header.php';
                                     onclick='editarProveedor(<?php echo json_encode($p); ?>)' title="Editar">
                                 <i class="fa fa-edit"></i>
                             </button>
-                            <a href="Poo/estado_proveedor.php?id=<?php echo $p['id_provider']; ?>&st=<?php echo $p['estado']; ?>" 
-                            class="btn btn-sm btn-light text-danger rounded-circle shadow-sm" title="Cambiar Estado">
-                                <i class="fa fa-power-off"></i>
-                            </a>
+                            <a href="Poo/estado_proveedor.php?id=<?php echo $p['id_proveedor']; ?>&st=<?php echo $p['estado']; ?>" 
+   class="btn btn-sm btn-light text-danger rounded-circle shadow-sm" title="Cambiar Estado">
+    <i class="fa fa-power-off"></i>
+</a>
                         </td>
                     </tr>
                     <?php endwhile; ?>
