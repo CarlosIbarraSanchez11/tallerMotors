@@ -1,0 +1,12 @@
+.env
+# Ignorar archivos de configuración de correo y tokens
+get_oauth_token.php
+*.json
+.env
+
+# Bloquear logs
+*.txt
+error_log
+
+# bloquea la carpeta vendor
+/vendor/
