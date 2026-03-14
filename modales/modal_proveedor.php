@@ -11,7 +11,7 @@
 
             <form id="formProveedor" action="Poo/guardar_proveedor.php" method="POST">
                 <div class="modal-body p-4">
-                    <input type="hidden" name="id_provider" id="id_provider">
+                    <input type="hidden" name="id_proveedor" id="id_proveedor">
 
                     <div class="mb-3">
                         <label class="small fw-bold text-muted">RUC (11 dígitos)</label>
