@@ -23,8 +23,18 @@ class Conexion {
     }
 
     private function conectar() {
-        $this->conexion = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-        
+        $host = DB_HOST;
+        $socket = getenv('DB_SOCKET'); // Agregaremos esta variable en Cloud Run
+
+        if ($socket) {
+            // Sinceramente, esta es la forma "Pro" de conectar en Google Cloud
+            // El host se pasa como null y el socket en el último parámetro
+            $this->conexion = mysqli_connect(null, DB_USER, DB_PASS, DB_NAME, null, $socket);
+        } else {
+            // Esta es la conexión normal por IP (la que usas en local)
+            $this->conexion = mysqli_connect($host, DB_USER, DB_PASS, DB_NAME);
+        }
+
         if (mysqli_connect_errno()) {
             die("Error de conexión: " . mysqli_connect_error());
         }
