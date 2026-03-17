@@ -60,7 +60,7 @@ function enviarConfirmacionCitaTaller($celular, $nombre, $servicio, $fecha, $hor
         "to" => prepararCelularY($celular),
         "type" => "template",
         "template" => [
-            "name" => "confirmar_cita_taller_v2",
+            "name" => "confirmar_cita_taller_v3",
             "language" => ["code" => "es"],
             "components" => [
                 ["type" => "body", "parameters" => [
@@ -84,7 +84,7 @@ function enviarPaseQRTaller($celular, $nombreCliente, $placa, $token) {
         "to" => prepararCelularY($celular),
         "type" => "template",
         "template" => [
-            "name" => "confirmacion_exitosa_taller",
+            "name" => "confirmacion_exitosa_taller_v2",
             "language" => ["code" => "es"],
             "components" => [
                 ["type" => "body", "parameters" => [
