@@ -1,8 +1,7 @@
-# 1. Usamos una imagen de PHP con Apache
+# 1. Usamos la imagen de PHP con Apache
 FROM php:8.2-apache
 
-# 2. Instalamos dependencias del sistema y extensiones de PHP
-# Sinceramente, aquí añadimos libjpeg y libfreetype para que Dompdf vea tus fotos
+# 2. Instalamos TODO en un solo paso (Ingredientes + Cocina)
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
@@ -14,24 +13,23 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install -j$(nproc) gd mysqli pdo pdo_mysql \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Instalamos Composer desde la imagen oficial
+# 3. Instalamos Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# 4. Configuramos el directorio de trabajo
+# 4. Directorio de trabajo
 WORKDIR /var/www/html
 
-# 5. Copiamos los archivos de tu proyecto
+# 5. Copiamos los archivos
 COPY . .
 
-# 6. Ejecutamos Composer para descargar la carpeta 'vendor'
+# 6. Instalamos dependencias de PHP (Dompdf, Google Storage, etc.)
 RUN composer install --no-interaction --optimize-autoloader --no-dev
 
-# 7. Ajustamos permisos para Apache
+# 7. Permisos
 RUN chown -R www-data:www-data /var/www/html
 
-# 8. Ajuste de puerto para Google Cloud Run (8080)
+# 8. Puerto 8080 para Cloud Run
 RUN sed -i 's/80/8080/g' /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf
 
-# 9. Exponemos el puerto y arrancamos
 EXPOSE 8080
 CMD ["apache2-foreground"]
