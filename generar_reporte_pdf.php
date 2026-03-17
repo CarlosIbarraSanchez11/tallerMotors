@@ -8,18 +8,23 @@ session_start();
 $id_cita = $_GET['id_cita'] ?? die("Error: ID de cita no recibido");
 session_write_close(); 
 
-require_once "Poo/Conexion.php";
-require_once "libs/dompdf/autoload.inc.php"; 
+// ✅ 2. EL NUEVO AUTOLOAD (Usa el de la raíz)
+require_once __DIR__ . '/vendor/autoload.php'; 
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
+require_once "Poo/Conexion.php";
 $db = new Conexion();
 
-function imagenBase64($ruta) {
-    if (file_exists($ruta) && !is_dir($ruta)) {
-        $tipoArchivo = pathinfo($ruta, PATHINFO_EXTENSION);
-        $datosArchivo = file_get_contents($ruta);
+// ✅ 3. FUNCIÓN DE IMAGEN MEJORADA PARA LA NUBE
+function imagenBase64($ruta_o_url) {
+    // Sinceramente, si es una URL de Google Cloud, la leemos igual
+    $context = stream_context_create(["ssl" => ["verify_peer" => false, "verify_peer_name" => false]]);
+    $datosArchivo = @file_get_contents($ruta_o_url, false, $context);
+    
+    if ($datosArchivo !== false) {
+        $tipoArchivo = pathinfo($ruta_o_url, PATHINFO_EXTENSION);
         return 'data:image/' . $tipoArchivo . ';base64,' . base64_encode($datosArchivo);
     }
     return ""; 
@@ -27,15 +32,10 @@ function imagenBase64($ruta) {
 
 function txt($texto) {
     if (!$texto) return "";
-    // Detecta si la cadena ya es UTF-8 para no romperla
-    if (mb_detect_encoding($texto, 'UTF-8', true)) {
-        return $texto;
-    }
-    // Si no es UTF-8, la convierte
-    return mb_convert_encoding($texto, 'UTF-8', 'ISO-8859-1');
+    return mb_convert_encoding($texto, 'UTF-8', 'UTF-8');
 }
 
-// CONSULTA DE DATOS MAESTRA
+// CONSULTA DE DATOS MAESTRA (Igual que la tuya)
 $sql = "SELECT ci.*, v.placa, v.marca, v.modelo, cl.nombre_completo,
                ot.id_orden, ot.km_ingreso, ot.nivel_combustible,
                ot.foto_frontal, ot.foto_posterior, ot.foto_tablero, ot.foto_lavado,
@@ -50,12 +50,25 @@ $sql = "SELECT ci.*, v.placa, v.marca, v.modelo, cl.nombre_completo,
 $res = $db->ejecutar($sql);
 $d = $db->recorrer($res);
 
-$id_orden        = $d['id_orden'];
-$root            = $_SERVER['DOCUMENT_ROOT'] . "/taller/";
-$ruta_ordenes    = $root . "img/ordenes/";
-$ruta_evidencias = $root . "img/evidencias/";
-$ruta_lavado     = $root . "uploads/lavado/";
-$logo_b64        = imagenBase64($root . "image/logo_taller.png");
+$id_orden = $d['id_orden'];
+
+// ✅ 4. RUTAS ACTUALIZADAS (Sin /taller/)
+$url_bucket = "https://storage.googleapis.com/taller-dr-motors-storage/img/ordenes/";
+$root = __DIR__ . "/"; // La raíz es donde está este archivo
+
+// Logo local (Este sí está en el servidor)
+$logo_b64 = imagenBase64($root . "image/logo_taller.png");
+
+// Fotos desde la NUBE (Google Cloud Storage)
+$foto_frontal_b64 = $d['foto_frontal'] ? imagenBase64($url_bucket . $d['foto_frontal']) : "";
+$foto_posterior_b64 = $d['foto_posterior'] ? imagenBase64($url_bucket . $d['foto_posterior']) : "";
+$foto_tablero_b64 = $d['foto_tablero'] ? imagenBase64($url_bucket . $d['foto_tablero']) : "";
+
+// Configuramos Dompdf para que no falle con las fuentes
+$options = new Options();
+$options->set('isRemoteEnabled', true);
+$options->set('defaultFont', 'Helvetica'); // Sinceramente, Helvetica evita el error de Arial Black
+$dompdf = new Dompdf($options);
 ?>
 <!DOCTYPE html>
 <html lang="es">
