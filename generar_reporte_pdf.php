@@ -8,11 +8,17 @@ session_start();
 $id_cita = $_GET['id_cita'] ?? die("Error: ID de cita no recibido");
 session_write_close(); 
 
-// ✅ 2. EL NUEVO AUTOLOAD (Usa el de la raíz)
+// ✅ LA RUTA GANADORA: Apunta al vendor que acabamos de ver en tu imagen
 require_once __DIR__ . '/vendor/autoload.php'; 
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
+
+// ✅ CONFIGURACIÓN PARA QUE NO MUERA POR LAS FUENTES
+$options = new Options();
+$options->set('isRemoteEnabled', true); 
+$options->set('defaultFont', 'Helvetica'); // Sinceramente, usa esta para evitar el lío de Arial Black
+$dompdf = new Dompdf($options);
 
 require_once "Poo/Conexion.php";
 $db = new Conexion();
