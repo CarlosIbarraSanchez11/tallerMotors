@@ -34,19 +34,15 @@ include 'master/header.php';
                     </thead>
                     <tbody>
                         <?php
-                        // Sinceramente, esta consulta calcula el balance: (ENTRADAS - SALIDAS)
-                        $sql = "SELECT p.*, 
-                                (
-                                    (SELECT COALESCE(SUM(cantidad), 0) FROM inventario_movimientos WHERE id_producto = p.id_producto AND tipo_movimiento = 'ENTRADA') - 
-                                    (SELECT COALESCE(SUM(cantidad), 0) FROM inventario_movimientos WHERE id_producto = p.id_producto AND tipo_movimiento = 'SALIDA')
-                                ) as stock_calculado
-                                FROM productos p 
-                                WHERE p.id_taller = '1' 
-                                ORDER BY p.nombre_producto ASC";
+                        // Sinceramente, ahora usamos directamente el campo stock_actual de la tabla
+                        $sql = "SELECT *, stock_actual as stock_calculado 
+                                FROM productos 
+                                WHERE id_taller = '1' 
+                                ORDER BY nombre_producto ASC";
 
                         $res = $db->ejecutar($sql);
                         while($row = $db->recorrer($res)):
-                            $stock = $row['stock_calculado'];
+                            $stock = $row['stock_actual']; // 👈 Usamos el valor real de la tabla
                             $minimo = $row['stock_minimo'];
                             
                             // Lógica de alertas: Rojo si es igual o menor al mínimo
