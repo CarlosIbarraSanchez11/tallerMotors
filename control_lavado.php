@@ -6,7 +6,10 @@ $db = new Conexion();
 if(!isset($_GET['id_cita'])) { header("Location: citas.php"); exit(); }
 $id_cita = $_GET['id_cita'];
 
-// Traemos datos del vehículo y las fotos de ingreso para referencia
+$url_bucket_ordenes = "https://storage.googleapis.com/taller-dr-motors-storage/img/ordenes/";
+$url_bucket_lavado  = "https://storage.googleapis.com/taller-dr-motors-storage/img/lavado/";
+
+// Traemos datos del vehículo y las fotos
 $sql = "SELECT ci.*, v.placa, v.marca, v.modelo, ot.id_orden, ot.foto_frontal, ot.foto_lavado
         FROM citas ci
         JOIN vehiculos v ON ci.id_vehiculo = v.id_vehiculo
@@ -39,7 +42,7 @@ include 'master/header.php';
                     <p class="mb-3"><b>Vehículo:</b> <?php echo $d['marca'] . " " . $d['modelo']; ?></p>
                     
                     <h6 class="fw-bold border-bottom pb-2 mb-2 text-muted small">FOTO DE RECEPCIÓN (REFERENCIA)</h6>
-                    <img src="img/ordenes/<?php echo $d['foto_frontal']; ?>" class="img-fluid rounded-4 shadow-sm mb-2" style="width: 100%; height: 200px; object-fit: cover;">
+                    <img src="<?php echo $url_bucket_ordenes . $d['foto_frontal']; ?>" class="img-fluid rounded-4 shadow-sm mb-2" style="width: 100%; height: 200px; object-fit: cover;">
                     <p class="text-muted small italic text-center">Así llegó el vehículo al taller.</p>
                 </div>
             </div>
@@ -80,8 +83,8 @@ include 'master/header.php';
                                 <label class="fw-bold mb-3 d-block small text-uppercase">Foto del Vehículo Terminado</label>
                                 
                                 <div id="preview-container" class="mb-3 <?php echo $d['foto_lavado'] ? '' : 'd-none'; ?>">
-                                    <img id="img-preview" src="<?php echo $d['foto_lavado'] ? 'uploads/lavado/'.$d['foto_lavado'] : '#'; ?>" 
-                                         class="img-fluid rounded-4 shadow" style="max-height: 200px; width: 100%; object-fit: cover;">
+                                    <img id="img-preview" src="<?php echo $d['foto_lavado'] ? $url_bucket_lavado . $d['foto_lavado'] : '#'; ?>" 
+                                        class="img-fluid rounded-4 shadow" style="max-height: 200px; width: 100%; object-fit: cover;">
                                 </div>
 
                                 <div class="bg-light p-4 rounded-4 border-dashed border-2" id="drop-area">
