@@ -337,31 +337,31 @@ include 'master/header.php';
                                         <small class="text-muted italic" style="font-size: 0.7rem;">Inc. Instalación y Gastos</small>
                                     </td>
                                     <td class="text-center">
-    <?php 
-    // Sinceramente, definimos los colores exactos en Hexadecimal para que no dependan de Bootstrap
-    $status_data = [
-        'PENDIENTE'              => ['bg' => '#fff3cd', 'text' => '#856404', 'border' => '#ffeeba', 'label' => 'POR ENVIAR'],
-        'ESPERANDO_CONFIRMACION' => ['bg' => '#d1ecf1', 'text' => '#0c5460', 'border' => '#bee5eb', 'label' => 'ENVIADO'],
-        'APROBADO'               => ['bg' => '#d4edda', 'text' => '#155724', 'border' => '#c3e6cb', 'label' => 'APROBADO'],
-        'RECHAZADO'              => ['bg' => '#f8d7da', 'text' => '#721c24', 'border' => '#f5c6cb', 'label' => 'RECHAZADO']
-    ];
+                                        <?php 
+                                        // Sinceramente, definimos los colores exactos en Hexadecimal para que no dependan de Bootstrap
+                                        $status_data = [
+                                            'PENDIENTE'              => ['bg' => '#fff3cd', 'text' => '#856404', 'border' => '#ffeeba', 'label' => 'POR ENVIAR'],
+                                            'ESPERANDO_CONFIRMACION' => ['bg' => '#d1ecf1', 'text' => '#0c5460', 'border' => '#bee5eb', 'label' => 'ENVIADO'],
+                                            'APROBADO'               => ['bg' => '#d4edda', 'text' => '#155724', 'border' => '#c3e6cb', 'label' => 'APROBADO'],
+                                            'RECHAZADO'              => ['bg' => '#f8d7da', 'text' => '#721c24', 'border' => '#f5c6cb', 'label' => 'RECHAZADO']
+                                        ];
 
-    $est = $h['estado_aprobacion'] ?? 'PENDIENTE';
-    $cfg = $status_data[$est] ?? $status_data['PENDIENTE'];
-    ?>
-    
-    <span class="badge rounded-pill" 
-          style="background-color: <?php echo $cfg['bg']; ?> !important; 
-                 color: <?php echo $cfg['text']; ?> !important; 
-                 border: 1px solid <?php echo $cfg['border']; ?> !important;
-                 padding: 8px 15px;
-                 font-size: 0.7rem;
-                 font-weight: 800;
-                 display: inline-block;">
-        <i class="fa <?php echo ($est == 'PENDIENTE') ? 'fa-clock' : 'fa-check-circle'; ?> me-1"></i>
-        <?php echo $cfg['label']; ?>
-    </span>
-</td>
+                                        $est = $h['estado_aprobacion'] ?? 'PENDIENTE';
+                                        $cfg = $status_data[$est] ?? $status_data['PENDIENTE'];
+                                        ?>
+                                        
+                                        <span class="badge rounded-pill" 
+                                            style="background-color: <?php echo $cfg['bg']; ?> !important; 
+                                                    color: <?php echo $cfg['text']; ?> !important; 
+                                                    border: 1px solid <?php echo $cfg['border']; ?> !important;
+                                                    padding: 8px 15px;
+                                                    font-size: 0.7rem;
+                                                    font-weight: 800;
+                                                    display: inline-block;">
+                                            <i class="fa <?php echo ($est == 'PENDIENTE') ? 'fa-clock' : 'fa-check-circle'; ?> me-1"></i>
+                                            <?php echo $cfg['label']; ?>
+                                        </span>
+                                    </td>
                                     <!-- <td class="text-center pe-4">
                                         <div class="btn-group shadow-sm rounded-pill overflow-hidden">
                                             <button class="btn btn-sm btn-white border-end" title="Ver Evidencia" onclick="verEvidencia('<?php echo $h['foto_evidencia']; ?>')">
@@ -441,6 +441,9 @@ include 'master/header.php';
                 <div class="card-body">
                     <div class="row g-3">
                         <?php
+                        // 1. Definimos la URL base de tu bucket
+                        $url_bucket = "https://storage.googleapis.com/taller-dr-motors-storage/img/evidencias/";
+
                         // Filtramos por id_orden
                         $sql_ev = "SELECT * FROM orden_evidencias WHERE id_orden = '$id_orden_actual' ORDER BY id_evidencia DESC";
                         $res_ev = $db->ejecutar($sql_ev);
@@ -454,7 +457,10 @@ include 'master/header.php';
                                         Nuevo
                                     </span>
                                     
-                                    <img src="img/evidencias/<?php echo $ev['foto']; ?>" class="img-fluid" style="height: 140px; width: 100%; object-fit: cover;">
+                                    <img src="<?php echo $url_bucket . $ev['foto']; ?>" 
+                                        class="img-fluid" 
+                                        style="height: 140px; width: 100%; object-fit: cover;"
+                                        alt="Evidencia">
                                     
                                     <div class="card-body p-2 text-center">
                                         <small class="fw-bold text-uppercase d-block text-truncate text-dark" style="font-size: 0.75rem;">
@@ -464,7 +470,8 @@ include 'master/header.php';
                                         <hr class="my-1 opacity-25">
                                         
                                         <a href="Poo/eliminar_evidencia.php?id=<?php echo $ev['id_evidencia']; ?>&id_cita=<?php echo $id_cita; ?>" 
-                                        class="text-danger small text-decoration-none fw-bold" onclick="return confirm('¿Eliminar este repuesto?')">
+                                        class="text-danger small text-decoration-none fw-bold" 
+                                        onclick="return confirm('¿Eliminar este repuesto?')">
                                             <i class="fa fa-trash-alt me-1"></i>Borrar
                                         </a>
                                     </div>
