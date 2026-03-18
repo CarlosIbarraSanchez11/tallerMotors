@@ -166,82 +166,89 @@ include 'master/header.php';
                     </div>
                 </div>
                 <div class="card-body">
-                    <form action="Poo/guardar_progreso_inspeccion.php" method="POST" enctype="multipart/form-data">
-                        <input type="hidden" name="id_cita" value="<?php echo $id_cita; ?>">
-                        <input type="hidden" name="id_orden" value="<?php echo $id_orden_actual; ?>">
+    <form action="Poo/guardar_progreso_inspeccion.php" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="id_cita" value="<?php echo $id_cita; ?>">
+        <input type="hidden" name="id_orden" value="<?php echo $id_orden_actual; ?>">
 
-                        <div class="accordion accordion-flush border rounded-4 overflow-hidden" id="accInspeccion">
-                            <?php
-                            // CONSULTA CLAVE: Une los pasos con los resultados ya guardados para esta orden
-                            $sql_p = "SELECT p.*, r.estado as estado_guardado, r.foto_evidencia 
-                                    FROM pasos_servicio p
-                                    LEFT JOIN inspeccion_resultados r ON p.id_paso = r.id_paso AND r.id_orden = '$id_orden_actual'
-                                    WHERE p.id_servicio = '$id_serv_actual' 
-                                    ORDER BY p.seccion_paso, p.orden_paso";
+        <div class="accordion accordion-flush border rounded-4 overflow-hidden" id="accInspeccion">
+            <?php
+            // 🚀 1. DEFINIMOS LA RUTA DEL BUCKET PARA LAS EVIDENCIAS
+            $url_bucket_evidencias = "https://storage.googleapis.com/taller-dr-motors-storage/img/evidencias/";
+
+            // CONSULTA CLAVE: Une los pasos con los resultados ya guardados
+            $sql_p = "SELECT p.*, r.estado as estado_guardado, r.foto_evidencia 
+                        FROM pasos_servicio p
+                        LEFT JOIN inspeccion_resultados r ON p.id_paso = r.id_paso AND r.id_orden = '$id_orden_actual'
+                        WHERE p.id_servicio = '$id_serv_actual' 
+                        ORDER BY p.seccion_paso, p.orden_paso";
+            
+            $res_p = $db->ejecutar($sql_p);
+            $seccion_actual = "";
+            $index = 0;
+
+            while($p = $db->recorrer($res_p)):
+                if($p['seccion_paso'] != $seccion_actual):
+                    if($seccion_actual != "") echo '</table></div></div></div>';
+                    $seccion_actual = $p['seccion_paso'];
+                    $index++;
+            ?>
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold text-uppercase small" type="button" data-bs-toggle="collapse" data-bs-target="#sec_<?php echo $index; ?>">
+                        <i class="fa fa-folder me-2 text-primary"></i> <?php echo $seccion_actual; ?>
+                    </button>
+                </h2>
+                <div id="sec_<?php echo $index; ?>" class="accordion-collapse collapse" data-bs-parent="#accInspeccion">
+                    <div class="accordion-body p-0">
+                        <table class="table table-hover table-sm mb-0 align-middle">
+                            <?php endif; 
                             
-                            $res_p = $db->ejecutar($sql_p);
-                            $seccion_actual = "";
-                            $index = 0;
-
-                            while($p = $db->recorrer($res_p)):
-                                if($p['seccion_paso'] != $seccion_actual):
-                                    if($seccion_actual != "") echo '</table></div></div></div>';
-                                    $seccion_actual = $p['seccion_paso'];
-                                    $index++;
+                            $esta_bloqueado = !empty($p['foto_evidencia']);
+                            $disabled = $esta_bloqueado ? 'disabled' : '';
+                            $estado = $p['estado_guardado'] ?? null;
                             ?>
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed fw-bold text-uppercase small" type="button" data-bs-toggle="collapse" data-bs-target="#sec_<?php echo $index; ?>">
-                                        <i class="fa fa-folder me-2 text-primary"></i> <?php echo $seccion_actual; ?>
-                                    </button>
-                                </h2>
-                                <div id="sec_<?php echo $index; ?>" class="accordion-collapse collapse" data-bs-parent="#accInspeccion">
-                                    <div class="accordion-body p-0">
-                                        <table class="table table-hover table-sm mb-0 align-middle">
-                                            <?php endif; 
-                                            // Lógica de Bloqueo: Si hay foto guardada, bloqueamos la fila
-                                            $esta_bloqueado = !empty($p['foto_evidencia']);
-                                            $disabled = $esta_bloqueado ? 'disabled' : '';
-                                            $estado = $p['estado_guardado'] ?? null;
-                                            ?>
-                                            <tr>
-                                                <td width="35%" class="small ps-3 fw-semibold text-wrap"><?php echo $p['descripcion_paso']; ?></td>
-                                                <td width="55%">
-                                                    <div class="btn-group btn-group-sm w-100" role="group">
-                                                        <input type="radio" class="btn-check" name="estado[<?php echo $p['id_paso']; ?>]" id="p<?php echo $p['id_paso']; ?>_ok" value="OK" <?php echo ($estado == 'OK') ? 'checked' : ''; ?> <?php echo $disabled; ?>>
-                                                        <label class="btn btn-outline-success border-1" for="p<?php echo $p['id_paso']; ?>_ok"><small class="fw-bold">OK</small></label>
+                            <tr>
+                                <td width="35%" class="small ps-3 fw-semibold text-wrap"><?php echo $p['descripcion_paso']; ?></td>
+                                <td width="55%">
+                                    <div class="btn-group btn-group-sm w-100" role="group">
+                                        <input type="radio" class="btn-check" name="estado[<?php echo $p['id_paso']; ?>]" id="p<?php echo $p['id_paso']; ?>_ok" value="OK" <?php echo ($estado == 'OK') ? 'checked' : ''; ?> <?php echo $disabled; ?>>
+                                        <label class="btn btn-outline-success border-1" for="p<?php echo $p['id_paso']; ?>_ok"><small class="fw-bold">OK</small></label>
 
-                                                        <input type="radio" class="btn-check" name="estado[<?php echo $p['id_paso']; ?>]" id="p<?php echo $p['id_paso']; ?>_reg" value="REGULAR" <?php echo ($estado == 'REGULAR') ? 'checked' : ''; ?> <?php echo $disabled; ?>>
-                                                        <label class="btn btn-outline-warning border-1" for="p<?php echo $p['id_paso']; ?>_reg"><small class="fw-bold">REG.</small></label>
-                                                        
-                                                        <input type="radio" class="btn-check" name="estado[<?php echo $p['id_paso']; ?>]" id="p<?php echo $p['id_paso']; ?>_mal" value="MAL" <?php echo ($estado == 'MAL') ? 'checked' : ''; ?> <?php echo $disabled; ?>>
-                                                        <label class="btn btn-outline-danger border-1" for="p<?php echo $p['id_paso']; ?>_mal"><small class="fw-bold">MAL</small></label>
+                                        <input type="radio" class="btn-check" name="estado[<?php echo $p['id_paso']; ?>]" id="p<?php echo $p['id_paso']; ?>_reg" value="REGULAR" <?php echo ($estado == 'REGULAR') ? 'checked' : ''; ?> <?php echo $disabled; ?>>
+                                        <label class="btn btn-outline-warning border-1" for="p<?php echo $p['id_paso']; ?>_reg"><small class="fw-bold">REG.</small></label>
+                                        
+                                        <input type="radio" class="btn-check" name="estado[<?php echo $p['id_paso']; ?>]" id="p<?php echo $p['id_paso']; ?>_mal" value="MAL" <?php echo ($estado == 'MAL') ? 'checked' : ''; ?> <?php echo $disabled; ?>>
+                                        <label class="btn btn-outline-danger border-1" for="p<?php echo $p['id_paso']; ?>_mal"><small class="fw-bold">MAL</small></label>
 
-                                                        <input type="radio" class="btn-check" name="estado[<?php echo $p['id_paso']; ?>]" id="p<?php echo $p['id_paso']; ?>_na" value="NO_TIENE" <?php echo ($estado == 'NO_TIENE') ? 'checked' : ''; ?> <?php echo $disabled; ?>>
-                                                        <label class="btn btn-outline-secondary border-1" for="p<?php echo $p['id_paso']; ?>_na"><small class="fw-bold">N/A</small></label>
-                                                    </div>
-                                                    <?php if($esta_bloqueado): ?>
-                                                        <input type="hidden" name="estado[<?php echo $p['id_paso']; ?>]" value="<?php echo $estado; ?>">
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td width="10%" class="text-end pe-3">
-                                                    <?php if($esta_bloqueado): ?>
-                                                        <div class="position-relative d-inline-block">
-                                                            <img src="img/evidencias/<?php echo $p['foto_evidencia']; ?>" class="rounded border border-success shadow-sm" style="width: 38px; height: 38px; object-fit: cover;">
-                                                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-dark p-1 border border-white">
-                                                                <i class="fa fa-lock text-white" style="font-size: 8px;"></i>
-                                                            </span>
-                                                        </div>
-                                                    <?php else: ?>
-                                                        <label class="btn btn-sm btn-light text-muted mb-0 border shadow-sm btn-camera-handler">
-                                                            <i class="fa fa-camera"></i>
-                                                            <input type="file" name="foto_punto[<?php echo $p['id_paso']; ?>]" class="d-none input-foto-checklist" accept="image/*" capture="camera">
-                                                        </label>
-                                                    <?php endif; ?>
-                                                </td>
-                                            </tr>
-                                            <?php endwhile; ?>
-                                            <?php if($seccion_actual != "") echo '</table></div></div></div>'; ?>
+                                        <input type="radio" class="btn-check" name="estado[<?php echo $p['id_paso']; ?>]" id="p<?php echo $p['id_paso']; ?>_na" value="NO_TIENE" <?php echo ($estado == 'NO_TIENE') ? 'checked' : ''; ?> <?php echo $disabled; ?>>
+                                        <label class="btn btn-outline-secondary border-1" for="p<?php echo $p['id_paso']; ?>_na"><small class="fw-bold">N/A</small></label>
+                                    </div>
+                                    <?php if($esta_bloqueado): ?>
+                                        <input type="hidden" name="estado[<?php echo $p['id_paso']; ?>]" value="<?php echo $estado; ?>">
+                                    <?php endif; ?>
+                                </td>
+                                <td width="10%" class="text-end pe-3">
+                                    <?php if($esta_bloqueado): ?>
+                                        <div class="position-relative d-inline-block">
+                                            <img src="<?php echo $url_bucket_evidencias . $p['foto_evidencia']; ?>" 
+                                                 class="rounded border border-success shadow-sm" 
+                                                 style="width: 38px; height: 38px; object-fit: cover;"
+                                                 alt="Evidencia Guardada">
+                                            
+                                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-dark p-1 border border-white">
+                                                <i class="fa fa-lock text-white" style="font-size: 8px;"></i>
+                                            </span>
+                                        </div>
+                                    <?php else: ?>
+                                        <label class="btn btn-sm btn-light text-muted mb-0 border shadow-sm btn-camera-handler">
+                                            <i class="fa fa-camera"></i>
+                                            <input type="file" name="foto_punto[<?php echo $p['id_paso']; ?>]" class="d-none input-foto-checklist" accept="image/*" capture="camera">
+                                        </label>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endwhile; ?>
+                            <?php if($seccion_actual != "") echo '</table></div></div></div>'; ?>
                         </div>
                         <div class="mt-3">
                             <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm py-2">
