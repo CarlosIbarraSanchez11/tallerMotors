@@ -5,14 +5,7 @@ $db = new Conexion();
 
 $id_cita = isset($_GET['id_cita']) ? $_GET['id_cita'] : die("Error: ID no recibido");
 
-// 🚀 1. CONFIGURACIÓN DE RUTAS DEL BUCKET
-$url_base = "https://storage.googleapis.com/taller-dr-motors-storage/img/";
-$url_ordenes       = $url_base . "ordenes/";
-$url_evidencias    = $url_base . "evidencias/";    // Inspección/Checklist
-$url_mantenimiento = $url_base . "mantenimiento/"; // Trabajo realizado
-$url_lavado        = $url_base . "lavado/";        // Foto final
-
-// CONSULTA PRINCIPAL
+// 1. CONSULTA PRINCIPAL (Cita, Vehículo, Cliente y Orden)
 $sql = "SELECT ci.*, v.placa, v.marca, v.modelo, cl.nombre_completo, cl.telefono,
                ot.id_orden, ot.km_ingreso, ot.nivel_combustible, ot.observaciones_recepcion, 
                ot.foto_frontal, ot.foto_posterior, ot.foto_tablero, ot.foto_lavado, ot.estado_orden,
@@ -32,22 +25,53 @@ include 'master/header.php';
 ?>
 
 <div class="container-fluid px-4 py-4 bg-light">
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <a href="citas.php" class="btn btn-white shadow-sm rounded-pill px-4 border-0 text-dark"><i class="fa fa-arrow-left me-2"></i>Volver</a>
+        <div>
+            <button onclick="window.print();" class="btn btn-white shadow-sm rounded-pill px-4 me-2 border-0 text-dark">
+                <i class="fa fa-print me-2 text-secondary"></i>Imprimir
+            </button>
+            
+            <a href="generar_reporte_pdf.php?id_cita=<?php echo $id_cita; ?>" 
+            target="_blank" class="btn btn-primary rounded-pill px-4 me-2 shadow-sm border-0">
+                <i class="fa fa-file-pdf me-2"></i>Descargar Reporte
+            </a>
+
+            <a href="generar_factura.php?id_cita=<?php echo $id_cita; ?>" 
+            target="_blank" class="btn btn-danger rounded-pill px-4 me-2 shadow-sm border-0">
+                <i class="fa fa-file-invoice me-2"></i>Descargar Factura
+            </a>
+
+            <?php if($d['estado'] !== 'FINALIZADO'): // Solo mostrar si no está ya finalizado ?>
+                <a href="finalizar_servicio.php?id_cita=<?php echo $id_cita; ?>" 
+                class="btn btn-success rounded-pill px-4 shadow-sm border-0"
+                onclick="return confirm('¿Confirmas que el vehículo ha sido ENTREGADO al cliente? Esto cerrará el proceso.')">
+                    <i class="fa fa-check-double me-2"></i>Entregar
+                </a>
+            <?php endif; ?>
+        </div>
+    </div>
+
     <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-white">
         <div class="card-body p-4 p-md-5">
             <div class="row g-5">
                 <div class="col-lg-7">
+                    
                     <div class="d-flex align-items-center mb-4 mt-5">
                         <div class="bg-success text-white rounded-circle p-2 me-3 shadow-sm" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
                             <i class="fa fa-camera-retro"></i>
                         </div>
                         <h5 class="fw-bold mb-0 text-dark">Inspección Técnica</h5>
                     </div>
-
+                    
                     <div class="accordion accordion-flush shadow-sm rounded-4 overflow-hidden mb-5" id="accordionInformeSistemas">
                         <?php
-                        $sql_ir = "SELECT ir.*, ip.descripcion_paso, ip.seccion_paso FROM inspeccion_resultados ir 
+                        $sql_ir = "SELECT ir.*, ip.descripcion_paso, ip.seccion_paso 
+                                   FROM inspeccion_resultados ir 
                                    INNER JOIN pasos_servicio ip ON ir.id_paso = ip.id_paso 
-                                   WHERE ir.id_cita = '$id_cita' ORDER BY ip.seccion_paso DESC";
+                                   WHERE ir.id_cita = '$id_cita' 
+                                   ORDER BY ip.seccion_paso DESC";
+
                         $res_ir = $db->ejecutar($sql_ir);
                         $seccion_actual = ""; $i = 0;
                         
@@ -66,11 +90,15 @@ include 'master/header.php';
                                     <div class="accordion-body bg-light-subtle"><div class="row g-3">
                         <?php endif; ?>
                             <div class="col-md-4 col-lg-3">
-                                <div class="card border-0 shadow-sm rounded-4 h-100 bg-white overflow-hidden">
+                                <div class="card border-0 shadow-sm rounded-4 h-100 bg-white border border-light-subtle overflow-hidden">
                                     <div class="p-3">
-                                        <small class="fw-bold d-block mb-2" style="font-size: 11px;"><?php echo $ir['descripcion_paso']; ?></small>
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <span class="fw-bold text-dark" style="font-size: 11px; line-height: 1.2;"><?php echo $ir['descripcion_paso']; ?></span>
+                                            <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size: 8px;"><?php echo $ir['estado']; ?></span>
+                                        </div>
+
                                         <?php if($ir['foto_evidencia']): ?>
-                                            <div class="rounded-3 overflow-hidden shadow-sm" style="height: 100px;">
+                                            <div class="rounded-3 overflow-hidden mt-2 shadow-sm" style="height: 100px;">
                                                 <img src="<?php echo $url_evidencias . $ir['foto_evidencia']; ?>" class="w-100 h-100 object-fit-cover">
                                             </div>
                                         <?php endif; ?>
@@ -96,12 +124,12 @@ include 'master/header.php';
                             while($ev = $db->recorrer($res_ev)):
                             ?>
                             <div class="col-md-4 col-lg-3">
-                                <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100 bg-white">
+                                <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100 bg-white border border-light-subtle">
                                     <div class="position-relative" style="height: 160px;">
                                         <img src="<?php echo $url_mantenimiento . $ev['foto']; ?>" class="w-100 h-100 object-fit-cover">
                                     </div>
                                     <div class="card-body p-3">
-                                        <p class="mb-0 fw-bold small"><?php echo $ev['descripcion']; ?></p>
+                                        <p class="mb-0 fw-bold text-dark small"><?php echo $ev['descripcion']; ?></p>
                                     </div>
                                 </div>
                             </div>
@@ -111,24 +139,21 @@ include 'master/header.php';
                 </div>
 
                 <div class="col-lg-5">
-                    <h6 class="text-dark fw-bold text-uppercase mb-3 small">Fotos de Ingreso</h6>
+                    <h6 class="text-dark fw-bold text-uppercase mb-3 small">Registro de Ingreso</h6>
                     <div class="row g-2 mb-4">
                         <div class="col-4">
-                            <img src="<?php echo $url_ordenes . $d['foto_frontal']; ?>" class="w-100 rounded-3 shadow-sm" style="height: 100px; object-fit: cover;">
-                            <p class="text-center x-small mt-1 text-muted">Frontal</p>
+                            <img src="<?php echo $url_ordenes . $d['foto_frontal']; ?>" class="w-100 rounded-3 border shadow-sm" style="height: 100px; object-fit: cover;">
                         </div>
                         <div class="col-4">
-                            <img src="<?php echo $url_ordenes . $d['foto_posterior']; ?>" class="w-100 rounded-3 shadow-sm" style="height: 100px; object-fit: cover;">
-                            <p class="text-center x-small mt-1 text-muted">Posterior</p>
+                            <img src="<?php echo $url_ordenes . $d['foto_posterior']; ?>" class="w-100 rounded-3 border shadow-sm" style="height: 100px; object-fit: cover;">
                         </div>
                         <div class="col-4">
-                            <img src="<?php echo $url_ordenes . $d['foto_tablero']; ?>" class="w-100 rounded-3 shadow-sm" style="height: 100px; object-fit: cover;">
-                            <p class="text-center x-small mt-1 text-muted">Tablero</p>
+                            <img src="<?php echo $url_ordenes . $d['foto_tablero']; ?>" class="w-100 rounded-3 border shadow-sm" style="height: 100px; object-fit: cover;">
                         </div>
                     </div>
 
                     <div class="text-center mt-4">
-                        <small class="fw-bold d-block mb-2 text-primary text-uppercase">Evidencia de Entrega (Lavado):</small>
+                        <small class="fw-bold d-block mb-2 text-primary text-uppercase">Vehículo Terminado (Lavado):</small>
                         <div class="rounded-4 overflow-hidden border border-primary shadow-sm">
                             <?php if($d['foto_lavado']): ?>
                                 <img src="<?php echo $url_lavado . $d['foto_lavado']; ?>" class="w-100" style="height: 200px; object-fit: cover;">
