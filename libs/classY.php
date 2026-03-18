@@ -108,7 +108,7 @@ function enviarTemplateSeguimientoTaller($celular, $nombre, $token) {
         "to" => prepararCelularY($celular),
         "type" => "template",
         "template" => [
-            "name" => "seguimiento_inspeccion_taller", 
+            "name" => "seguimiento_inspeccion_taller_v2", 
             "language" => ["code" => "es"],
             "components" => [
                 ["type" => "body", "parameters" => [
@@ -132,7 +132,7 @@ function enviarPresupuestoCorrectivoTaller($celular, $nombre, $placa, $cantidad,
         "to" => prepararCelularY($celular),
         "type" => "template",
         "template" => [
-            "name" => "presupuesto_correctivo_taller", 
+            "name" => "presupuesto_correctivo_taller_v3", 
             "language" => ["code" => "es"],
             "components" => [
                 ["type" => "body", "parameters" => [
@@ -157,7 +157,7 @@ function enviarTemplateCancelacion($celular, $nombre) {
         "to" => prepararCelularY($celular),
         "type" => "template",
         "template" => [
-            "name" => "cancelacion_cita_taller",
+            "name" => "cancelacion_cita_taller_v2",
             "language" => ["code" => "es"],
             "components" => [
                 ["type" => "body", "parameters" => [
@@ -178,7 +178,7 @@ function enviarTemplateEntregaVehiculo($celular, $nombre, $placa, $id_cita, $tok
         "to" => prepararCelularY($celular),
         "type" => "template",
         "template" => [
-            "name" => "entrega_vehiculo_taller", 
+            "name" => "entrega_vehiculo_taller_v2", 
             "language" => ["code" => "es"],
             "components" => [
                 ["type" => "body", "parameters" => [
