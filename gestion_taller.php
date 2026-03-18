@@ -449,7 +449,7 @@ include 'master/header.php';
                     <div class="row g-3">
                         <?php
                         // 1. Definimos la URL base de tu bucket
-                        $url_bucket = "https://storage.googleapis.com/taller-dr-motors-storage/img/evidencias/";
+                        $url_bucket = "https://storage.googleapis.com/taller-dr-motors-storage/img/mantenimiento/";
 
                         // Filtramos por id_orden
                         $sql_ev = "SELECT * FROM orden_evidencias WHERE id_orden = '$id_orden_actual' ORDER BY id_evidencia DESC";
