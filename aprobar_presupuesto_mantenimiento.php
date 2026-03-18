@@ -80,7 +80,11 @@ $res_h = $db->ejecutar($sql_h);
     <form id="formAprobacion">
         <input type="hidden" name="id_cita" value="<?php echo $id_cita; ?>">
 
-        <?php while($h = $db->recorrer($res_h)): 
+        <?php 
+        // 🚀 1. DEFINIMOS LA RUTA DEL BUCKET PARA HALLAZGOS
+        $url_bucket_hallazgos = "https://storage.googleapis.com/taller-dr-motors-storage/img/hallazgos/";
+
+        while($h = $db->recorrer($res_h)): 
             $total_item = $h['precio_producto']; 
             $nombre_item = !empty($h['nombre_producto']) ? $h['nombre_producto'] : $h['punto_falla'];
         ?>
@@ -93,7 +97,7 @@ $res_h = $db->ejecutar($sql_h);
                 <div class="selection-indicator"><i class="fa fa-check small"></i></div>
                 <div class="img-container">
                     <?php if($h['foto_evidencia']): ?>
-                        <img src="img/evidencias/<?php echo $h['foto_evidencia']; ?>" class="img-evidencia">
+                        <img src="<?php echo $url_bucket_hallazgos . $h['foto_evidencia']; ?>" class="img-evidencia">
                     <?php else: ?>
                         <div class="img-evidencia d-flex align-items-center justify-content-center bg-light">
                             <i class="fa fa-wrench fa-3x text-muted opacity-25"></i>
