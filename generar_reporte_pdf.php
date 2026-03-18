@@ -1,47 +1,51 @@
 <?php
-// 1. AJUSTES DE POTENCIA
+// 1. AJUSTES DE RENDIMIENTO
 ini_set('memory_limit', '1024M'); 
 set_time_limit(0); 
 
 ob_start();
 session_start();
-$id_cita = $_GET['id_cita'] ?? die("Error: ID de cita no recibido");
-session_write_close(); 
 
-// ✅ LA RUTA GANADORA: Apunta al vendor que acabamos de ver en tu imagen
+// ✅ CARGA DE LIBRERÍAS
 require_once __DIR__ . '/vendor/autoload.php'; 
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
-// ✅ CONFIGURACIÓN PARA QUE NO MUERA POR LAS FUENTES
-$options = new Options();
-$options->set('isRemoteEnabled', true); 
-$options->set('defaultFont', 'Helvetica'); // Sinceramente, usa esta para evitar el lío de Arial Black
-$dompdf = new Dompdf($options);
-
 require_once "Poo/Conexion.php";
 $db = new Conexion();
 
-// ✅ 3. FUNCIÓN DE IMAGEN MEJORADA PARA LA NUBE
-function imagenBase64($ruta_o_url) {
-    // Sinceramente, si es una URL de Google Cloud, la leemos igual
-    $context = stream_context_create(["ssl" => ["verify_peer" => false, "verify_peer_name" => false]]);
-    $datosArchivo = @file_get_contents($ruta_o_url, false, $context);
+$id_cita = $_GET['id_cita'] ?? die("Error: ID de cita no recibido");
+
+// ✅ 2. RUTAS MAESTRAS DEL BUCKET DE GOOGLE CLOUD
+$url_base = "https://storage.googleapis.com/taller-dr-motors-storage/img/";
+$url_ordenes       = $url_base . "ordenes/";
+$url_evidencias    = $url_base . "evidencias/";    // Inspección Técnica
+$url_mantenimiento = $url_base . "mantenimiento/"; // Trabajo Realizado
+$url_lavado        = $url_base . "lavado/";        // Foto final
+
+// 3. FUNCIÓN MAESTRA BASE64 (Indispensable para Dompdf en Cloud Run)
+function imagenBase64($url) {
+    if (!$url || empty($url)) return "";
     
+    $context = stream_context_create([
+        "ssl" => ["verify_peer" => false, "verify_peer_name" => false],
+        "http" => ["header" => "User-Agent: PHP\r\n"]
+    ]);
+    
+    $datosArchivo = @file_get_contents($url, false, $context);
     if ($datosArchivo !== false) {
-        $tipoArchivo = pathinfo($ruta_o_url, PATHINFO_EXTENSION);
-        return 'data:image/' . $tipoArchivo . ';base64,' . base64_encode($datosArchivo);
+        $ext = pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION);
+        return 'data:image/' . ($ext ?: 'jpeg') . ';base64,' . base64_encode($datosArchivo);
     }
     return ""; 
 }
 
 function txt($texto) {
-    if (!$texto) return "";
-    return mb_convert_encoding($texto, 'UTF-8', 'UTF-8');
+    return mb_convert_encoding($texto ?? '', 'UTF-8', 'UTF-8');
 }
 
-// CONSULTA DE DATOS MAESTRA (Igual que la tuya)
+// 4. CONSULTA DE DATOS PRINCIPAL
 $sql = "SELECT ci.*, v.placa, v.marca, v.modelo, cl.nombre_completo,
                ot.id_orden, ot.km_ingreso, ot.nivel_combustible,
                ot.foto_frontal, ot.foto_posterior, ot.foto_tablero, ot.foto_lavado,
@@ -55,26 +59,13 @@ $sql = "SELECT ci.*, v.placa, v.marca, v.modelo, cl.nombre_completo,
 
 $res = $db->ejecutar($sql);
 $d = $db->recorrer($res);
-
 $id_orden = $d['id_orden'];
 
-// ✅ 4. RUTAS ACTUALIZADAS (Sin /taller/)
-$url_bucket = "https://storage.googleapis.com/taller-dr-motors-storage/img/ordenes/";
-$root = __DIR__ . "/"; // La raíz es donde está este archivo
-
-// Logo local (Este sí está en el servidor)
-$logo_b64 = imagenBase64($root . "image/logo_taller.png");
-
-// Fotos desde la NUBE (Google Cloud Storage)
-$foto_frontal_b64 = $d['foto_frontal'] ? imagenBase64($url_bucket . $d['foto_frontal']) : "";
-$foto_posterior_b64 = $d['foto_posterior'] ? imagenBase64($url_bucket . $d['foto_posterior']) : "";
-$foto_tablero_b64 = $d['foto_tablero'] ? imagenBase64($url_bucket . $d['foto_tablero']) : "";
-
-// Configuramos Dompdf para que no falle con las fuentes
-$options = new Options();
-$options->set('isRemoteEnabled', true);
-$options->set('defaultFont', 'Helvetica'); // Sinceramente, Helvetica evita el error de Arial Black
-$dompdf = new Dompdf($options);
+// Logo local y fotos principales convertidas a Base64 para estabilidad
+$logo_b64 = imagenBase64(__DIR__ . "/image/logo_taller.png");
+$foto_f = imagenBase64($url_ordenes . $d['foto_frontal']);
+$foto_p = imagenBase64($url_ordenes . $d['foto_posterior']);
+$foto_t = imagenBase64($url_ordenes . $d['foto_tablero']);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -337,110 +328,94 @@ $dompdf = new Dompdf($options);
 </head>
 <body>
 
-<div class="footer">DOCUMENTO TÉCNICO OFICIAL DR. MOTORS &nbsp;—&nbsp; PÁGINA {PAGENO}</div>
+<div class="footer">DOCUMENTO TÉCNICO OFICIAL DR. MOTORS &nbsp;—&nbsp; PLACA: <?php echo $d['placa']; ?></div>
 
 <div class="wrapper">
-
-    <!-- HEADER -->
-    <table class="header" cellspacing="0" cellpadding="0">
+    <table class="header">
         <tr>
             <td width="50%">
-                <table cellspacing="0" cellpadding="0">
-                    <tr>
-                        <?php if ($logo_b64): ?>
-                        <td style="padding-right: 14px; vertical-align: middle;">
-                            <img src="<?php echo $logo_b64; ?>" class="logo-img">
-                        </td>
-                        <?php endif; ?>
-                        <!-- <td style="vertical-align: middle;">
-                            <div class="brand">DR. <span>MOTORS</span></div>
-                            <div class="brand-sub">Expertise Automotriz</div>
-                        </td> -->
-                    </tr>
-                </table>
+                <?php if ($logo_b64): ?>
+                    <img src="<?php echo $logo_b64; ?>" class="logo-img">
+                <?php endif; ?>
             </td>
             <td width="50%" class="doc-meta">
                 <div class="doc-title">EXPEDIENTE TÉCNICO DIGITAL</div>
-                <div class="doc-date">
-                    GENERADO EL: <?php echo date('d/m/Y'); ?><br>
-                    <?php echo htmlspecialchars($d['marca'].' '.$d['modelo']); ?> &nbsp;|&nbsp; <?php echo htmlspecialchars($d['placa']); ?>
-                </div>
+                <div>GENERADO EL: <?php echo date('d/m/Y'); ?></div>
+                <div><?php echo htmlspecialchars($d['marca'].' '.$d['modelo']); ?> | <?php echo htmlspecialchars($d['placa']); ?></div>
                 <div class="order-badge">ORDEN #<?php echo str_pad($id_orden, 5, "0", STR_PAD_LEFT); ?></div>
             </td>
         </tr>
     </table>
 
-    <!-- FICHA VEHÍCULO -->
-    <table class="summary-grid" cellspacing="0" cellpadding="0">
+    <table class="summary-grid" cellspacing="0">
         <tr>
             <td class="summary-item" width="33%">
                 <div class="s-label">Propietario</div>
                 <div class="s-value"><?php echo txt($d['nombre_completo']); ?></div>
             </td>
             <td class="summary-item" width="33%">
-                <div class="s-label">Vehículo / Modelo</div>
+                <div class="s-label">Vehículo</div>
                 <div class="s-value"><?php echo txt($d['marca']." ".$d['modelo']); ?></div>
             </td>
-            <td class="summary-item" width="33%">
-                <div class="s-label">Placa de Rodaje</div>
-                <div class="s-value" style="color:#2563eb; font-size:16px;"><?php echo htmlspecialchars($d['placa']); ?></div>
+            <td class="summary-item" width="33%" style="border-right:0;">
+                <div class="s-label">Placa</div>
+                <div class="s-value" style="color:#2563eb;"><?php echo htmlspecialchars($d['placa']); ?></div>
             </td>
         </tr>
     </table>
 
-    <!-- SECCIÓN I -->
-    <div class="section-bar">I. &nbsp;Recepción y Estado de Ingreso</div>
-
-    <table class="photo-table" cellspacing="0" cellpadding="0">
+    <div class="section-bar">I. Recepción y Estado de Ingreso</div>
+    <table class="photo-table">
         <tr>
             <td class="photo-cell">
                 <div class="card">
-                    <img src="<?php echo imagenBase64($ruta_ordenes . $d['foto_frontal']); ?>">
+                    <img src="<?php echo $foto_f; ?>">
                     <div class="card-footer"><div class="card-desc">Frontal / Placa</div></div>
                 </div>
             </td>
             <td class="photo-cell">
                 <div class="card">
-                    <img src="<?php echo imagenBase64($ruta_ordenes . $d['foto_posterior']); ?>">
+                    <img src="<?php echo $foto_p; ?>">
                     <div class="card-footer"><div class="card-desc">Vista Posterior</div></div>
                 </div>
             </td>
             <td class="photo-cell">
                 <div class="card">
-                    <img src="<?php echo imagenBase64($ruta_ordenes . $d['foto_tablero']); ?>">
+                    <img src="<?php echo $foto_t; ?>">
                     <div class="card-footer">
-                        <div class="card-desc">Kilometraje Registrado</div>
-                        <div style="font-size:12px; font-weight:700; color:#0d1b3e; margin-top:3px;"><?php echo number_format($d['km_ingreso']); ?> KM</div>
+                        <div class="card-desc">Kilometraje</div>
+                        <div style="font-size:11px; font-weight:bold;"><?php echo number_format($d['km_ingreso']); ?> KM</div>
                     </div>
                 </div>
             </td>
         </tr>
     </table>
 
-    <!-- CONTROL DE CALIDAD -->
-    <div class="quality-box" style="margin-bottom: 10px !important">
-        <table width="100%" cellspacing="0" cellpadding="0">
+    <div class="quality-box">
+        <table width="100%">
             <tr>
-                <td width="65%" style="vertical-align: top;">
+                <td width="70%">
                     <div class="quality-title">Control de Calidad Final</div>
-                    <div class="quality-items">
-                        &#10003; &nbsp;Limpieza exterior y detallado de carrocería<br>
-                        &#10003; &nbsp;Aspirado y desinfección total de cabina<br>
-                        &#10003; &nbsp;Verificación técnica de fluidos y niveles de seguridad
+                    <div style="font-size:10px; color:#555;">
+                        • Limpieza exterior y detallado de carrocería<br>
+                        • Aspirado y desinfección de cabina<br>
+                        • Verificación técnica de fluidos y niveles
                     </div>
                 </td>
-                <td align="right" style="vertical-align: middle;">
-                    <div class="cert-badge">&#10003; &nbsp;CERTIFICADO OK</div>
+                <td align="right">
+                    <div class="cert-badge">CERTIFICADO OK</div>
                 </td>
             </tr>
         </table>
-        <?php $img_lav = imagenBase64($ruta_lavado . $d['foto_lavado']); ?>
-        <img src="<?php echo $img_lav ?: imagenBase64($ruta_ordenes . $d['foto_lavado']); ?>" class="wash-img">
+        <?php 
+        $img_l = $d['foto_lavado'] ? imagenBase64($url_lavado . $d['foto_lavado']) : "";
+        if($img_l): ?>
+            <img src="<?php echo $img_l; ?>" class="wash-img">
+        <?php endif; ?>
     </div>
 
-    <!-- SECCIÓN II: INSPECCIÓN -->
     <div class="page-break"></div>
-    <div class="section-bar">II. &nbsp;Informe Técnico por Sistemas</div>
+    <div class="section-bar">II. Informe Técnico por Sistemas</div>
 
     <?php
     $sql_ir = "SELECT ir.*, ps.descripcion_paso, ps.seccion_paso 
@@ -449,20 +424,19 @@ $dompdf = new Dompdf($options);
                WHERE ir.id_cita = '$id_cita' 
                ORDER BY ps.seccion_paso ASC, ps.orden_paso ASC";
     $res_ir = $db->ejecutar($sql_ir);
+    $seccion_actual = ""; $buffer = [];
 
-    $seccion_actual = "";
-    $buffer = [];
-
-    function render_row($items) {
-        echo '<table class="photo-table" cellspacing="0" cellpadding="0"><tr>';
+    function render_pdf_row($items, $url_ev) {
+        echo '<table class="photo-table"><tr>';
         foreach ($items as $it) {
             $st_cls = ($it['estado'] == 'OK') ? 'pill-ok' : 'pill-fail';
+            $img_b64 = imagenBase64($url_ev . $it['foto']);
             echo '<td class="photo-cell">
                     <div class="card">
-                        <img src="'.$it['img'].'">
+                        '.($img_b64 ? '<img src="'.$img_b64.'">' : '<div style="height:140px; background:#f0f0f0; text-align:center; padding-top:60px; color:#999; font-size:8px;">SIN FOTO</div>').'
                         <div class="card-footer">
                             <div class="card-desc">'.$it['desc'].'</div>
-                            <span class="pill '.$st_cls.'">&#9679; '.$it['estado'].'</span>
+                            <span class="pill '.$st_cls.'">'.$it['estado'].'</span>
                         </div>
                     </div>
                   </td>';
@@ -473,114 +447,71 @@ $dompdf = new Dompdf($options);
 
     while ($ir = $db->recorrer($res_ir)):
         if ($ir['seccion_paso'] !== $seccion_actual):
-            if (!empty($buffer)) render_row($buffer);
-            $buffer = [];
-            $seccion_actual = $ir['seccion_paso'];
+            if (!empty($buffer)) render_pdf_row($buffer, $url_evidencias);
+            $buffer = []; $seccion_actual = $ir['seccion_paso'];
             echo '<div class="sub-system-bar">Sistema: '.txt($seccion_actual).'</div>';
         endif;
-
-        $buffer[] = [
-            'img'    => imagenBase64($ruta_evidencias . $ir['foto_evidencia']),
-            'desc'   => txt($ir['descripcion_paso']),
-            'estado' => $ir['estado']
-        ];
-
-        if (count($buffer) == 3) { render_row($buffer); $buffer = []; }
+        $buffer[] = ['foto' => $ir['foto_evidencia'], 'desc' => txt($ir['descripcion_paso']), 'estado' => $ir['estado']];
+        if (count($buffer) == 3) { render_pdf_row($buffer, $url_evidencias); $buffer = []; }
     endwhile;
-    if (!empty($buffer)) render_row($buffer);
+    if (!empty($buffer)) render_pdf_row($buffer, $url_evidencias);
     ?>
 
     <div class="page-break"></div>
-    <div class="section-bar">III. &nbsp;Evidencias de Instalación de Kit de Servicio y Hallazgos</div>
-    
-    <div style="margin-bottom: 20px; color: #666; font-size: 11px; font-style: italic;">
-        Registro fotográfico de los componentes sustituidos y trabajos correctivos realizados en la unidad.
+    <div class="section-bar">III. Evidencias de Mantenimiento Realizado</div>
+    <div style="margin-bottom: 15px; color: #666; font-size: 10px; font-style: italic;">
+        Registro de componentes sustituidos y trabajos correctivos finalizados.
     </div>
-
     <?php
-    // 🚀 CONSULTA ACTUALIZADA: Ahora buscamos en orden_evidencias
-    $sql_ev = "SELECT * FROM orden_evidencias 
-            WHERE id_cita = '$id_cita' 
-            AND foto IS NOT NULL 
-            AND foto != ''
-            ORDER BY id_evidencia ASC";
+    $sql_mante = "SELECT * FROM orden_evidencias WHERE id_cita = '$id_cita' ORDER BY id_evidencia ASC";
+    $res_mante = $db->ejecutar($sql_mante);
+    $buffer_m = [];
 
-    $res_ev = $db->ejecutar($sql_ev);
-    $buffer_ev = [];
-
-    // Función de renderizado optimizada para la nueva estructura
-    function render_evidencias_row($items) {
-        echo '<table class="photo-table" cellspacing="0" cellpadding="0" style="margin-bottom:20px; width: 100%;"><tr>';
+    function render_mante_row($items, $url_m) {
+        echo '<table class="photo-table"><tr>';
         foreach ($items as $it) {
-            echo '<td class="photo-cell" style="width: 33.3%; padding: 5px;">
-                    <div class="card" style="border: 1px solid #1a73e8; border-radius: 8px; overflow: hidden;">
-                        <img src="'.$it['img'].'" style="height: 150px; width: 100%; object-fit: cover;">
-                        <div class="card-footer" style="background-color: #f0f7ff; padding: 8px; min-height: 45px;">
-                            <div style="color: #0f2057; font-weight: bold; font-size: 9px; line-height: 1.2;">
-                                '.txt($it['desc']).'
-                            </div>
+            $img_b64 = imagenBase64($url_m . $it['foto']);
+            echo '<td class="photo-cell">
+                    <div class="card" style="border-color:#2563eb;">
+                        <img src="'.$img_b64.'">
+                        <div class="card-footer" style="background:#eef2ff;">
+                            <div class="card-desc" style="color:#1e3a8a;">'.$it['desc'].'</div>
                         </div>
                     </div>
-                </td>';
+                  </td>';
         }
-        // Rellenar celdas vacías si hay menos de 3 para mantener el diseño
-        for ($i = count($items); $i < 3; $i++) echo '<td class="photo-cell" style="width: 33.3%;"></td>';
+        for ($i = count($items); $i < 3; $i++) echo '<td class="photo-cell"></td>';
         echo '</tr></table>';
     }
 
-    while ($ev = $db->recorrer($res_ev)):
-        // Agregamos al buffer usando los nombres de columna de tu nueva tabla
-        $buffer_ev[] = [
-            'img'  => imagenBase64($ruta_evidencias . $ev['foto']), // 'foto' en lugar de 'foto_evidencia'
-            'desc' => $ev['descripcion'] 
-        ];
-
-        if (count($buffer_ev) == 3) { 
-            render_evidencias_row($buffer_ev); 
-            $buffer_ev = []; 
-        }
+    while ($ev = $db->recorrer($res_mante)):
+        $buffer_m[] = ['foto' => $ev['foto'], 'desc' => txt($ev['descripcion'])];
+        if (count($buffer_m) == 3) { render_mante_row($buffer_m, $url_mantenimiento); $buffer_m = []; }
     endwhile;
-
-    // Renderizar el último renglón si sobraron fotos
-    if (!empty($buffer_ev)) render_evidencias_row($buffer_ev);
-
-    if ($db->contar($res_ev) == 0) {
-        echo '<div style="text-align:center; padding: 40px; color: #999; border: 2px dashed #eee; border-radius: 15px;">
-                <i class="fa fa-info-circle"></i> No se registraron evidencias fotográficas en esta orden de servicio.
-            </div>';
+    if (!empty($buffer_m)) render_mante_row($buffer_m, $url_mantenimiento);
+    
+    if ($db->contar($res_mante) == 0) {
+        echo '<div style="text-align:center; padding: 40px; color: #ccc;">No hay registros de mantenimiento.</div>';
     }
     ?>
-    
+</div>
 
-    <!-- <div style="margin-top: 50px; padding: 20px; background-color: #f8f9fa; border-radius: 10px; border: 1px solid #e1e8ed;">
-        <table width="100%">
-            <tr>
-                <td width="70%">
-                    <div style="font-size: 11px; font-weight: bold; color: #0f2057; text-transform: uppercase;">Certificación Dr. Motors</div>
-                    <div style="font-size: 9px; color: #666; margin-top: 5px;">
-                        Todos los repuestos instalados cuentan con garantía de fábrica. El trabajo realizado ha sido verificado bajo estándares técnicos de alta precisión.
-                    </div>
-                </td>
-                <td width="30%" align="right">
-                    <div style="border-top: 1px solid #000; width: 150px; margin-top: 40px;"></div>
-                    <div style="font-size: 9px; text-align: center; width: 150px;">Firma del Jefe de Taller</div>
-                </td>
-            </tr>
-        </table>
-    </div> -->
-
-</div><!-- /.wrapper -->
 </body>
 </html>
+
 <?php
+// FINALIZACIÓN DEL PDF
 $html = ob_get_clean();
+
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
 $options->set('isRemoteEnabled', true); 
+$options->set('defaultFont', 'Helvetica');
 
 $dompdf = new Dompdf($options);
 $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
-$dompdf->stream("Expediente_DrMotors_".$d['placa'].".pdf", array("Attachment" => false));
+
+$dompdf->stream("Expediente_DrMotors_".$d['placa'].".pdf", ["Attachment" => false]);
 ?>
