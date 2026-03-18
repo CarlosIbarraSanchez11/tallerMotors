@@ -21,8 +21,6 @@ $res = $db->ejecutar($sql);
 $d = $db->recorrer($res);
 $id_orden = $d['id_orden'];
 
-$url_bucket_evidencias = "https://storage.googleapis.com/taller-dr-motors-storage/img/evidencias/";
-
 include 'master/header.php';
 ?>
 
@@ -120,23 +118,22 @@ include 'master/header.php';
                     </div>
                     <div class="accordion accordion-flush shadow-sm rounded-4 overflow-hidden mb-5" id="accordionInformeSistemas">
                         <?php
-                        // 🚀 1. URL EXACTA DEL BUCKET (Basada en tu imagen de carpetas)
-                        $url_bucket_evidencias = "https://storage.googleapis.com/taller-dr-motors-storage/img/evidencias/";
-
-                        // 2. CONSULTA SQL
-                        $sql_ir = "SELECT ir.*, ip.descripcion_paso, ip.seccion_paso 
-                                    FROM inspeccion_resultados ir 
-                                    INNER JOIN pasos_servicio ip ON ir.id_paso = ip.id_paso 
-                                    WHERE ir.id_cita = '$id_cita' 
-                                    ORDER BY ip.seccion_paso DESC, ip.orden_paso ASC";
+                        // CONSULTA UNIDA: Resultados + Nombres y Secciones de Pasos
+                        $sql_ir = "SELECT ir.*, ip.descripcion_paso, ip.seccion_paso, ip.orden_paso 
+                                FROM inspeccion_resultados ir 
+                                INNER JOIN pasos_servicio ip ON ir.id_paso = ip.id_paso 
+                                WHERE ir.id_cita = '$id_cita' 
+                                ORDER BY ip.seccion_paso DESC, ip.orden_paso ASC";
 
                         $res_ir = $db->ejecutar($sql_ir);
+                        
                         $seccion_actual = ""; 
-                        $i = 0; 
+                        $i = 0; // Contador para IDs únicos del acordeón
                         
                         while($ir = $db->recorrer($res_ir)):
+                            // Si la sección cambia, cerramos la anterior e iniciamos un nuevo item de acordeón
                             if ($seccion_actual != $ir['seccion_paso']): 
-                                if ($seccion_actual != "") echo '</div></div></div></div>'; 
+                                if ($seccion_actual != "") echo '</div></div></div></div>'; // Cierra row, body, collapse e item
                                 $seccion_actual = $ir['seccion_paso'];
                                 $i++;
                                 $target_id = "collapseSystem" . $i;
@@ -144,7 +141,10 @@ include 'master/header.php';
                             <div class="accordion-item border-bottom">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button <?php echo ($i > 1) ? 'collapsed' : ''; ?> fw-bold text-dark bg-white" 
-                                            type="button" data-bs-toggle="collapse" data-bs-target="#<?php echo $target_id; ?>">
+                                            type="button" 
+                                            data-bs-toggle="collapse" 
+                                            data-bs-target="#<?php echo $target_id; ?>" 
+                                            aria-expanded="<?php echo ($i == 1) ? 'true' : 'false'; ?>">
                                         <div class="d-flex align-items-center">
                                             <div class="bg-primary-subtle text-primary rounded-circle p-1 me-3 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
                                                 <i class="fa fa-microscope" style="font-size: 14px;"></i>
@@ -153,7 +153,10 @@ include 'master/header.php';
                                         </div>
                                     </button>
                                 </h2>
-                                <div id="<?php echo $target_id; ?>" class="accordion-collapse collapse <?php echo ($i == 1) ? 'show' : ''; ?>" data-bs-parent="#accordionInformeSistemas">
+                                
+                                <div id="<?php echo $target_id; ?>" 
+                                    class="accordion-collapse collapse <?php echo ($i == 1) ? 'show' : ''; ?>" 
+                                    data-bs-parent="#accordionInformeSistemas">
                                     <div class="accordion-body bg-light-subtle">
                                         <div class="row g-3">
                         <?php endif; ?>
@@ -165,25 +168,21 @@ include 'master/header.php';
                                             <span class="fw-bold text-dark" style="font-size: 11px; line-height: 1.2;">
                                                 <?php echo $ir['descripcion_paso']; ?>
                                             </span>
-                                            <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size: 8px;">
+                                            <?php 
+                                                $badge_class = ($ir['estado'] == 'OK') ? 'bg-success' : (($ir['estado'] == 'REGULAR') ? 'bg-warning text-dark' : 'bg-danger');
+                                            ?>
+                                            <span class="badge <?php echo $badge_class; ?> rounded-pill px-2 py-1" style="font-size: 8px;">
                                                 <?php echo $ir['estado']; ?>
                                             </span>
                                         </div>
 
-                                        <?php 
-                                        // 🚀 3. VERIFICACIÓN ULTRA-SEGURA DEL NOMBRE DEL ARCHIVO
-                                        $nombre_foto = trim($ir['foto_evidencia']); // Quitamos espacios accidentales
-                                        if(!empty($nombre_foto) && $ir['estado'] != 'NO_TIENE'): 
-                                        ?>
+                                        <?php if($ir['foto_evidencia']): ?>
                                             <div class="rounded-3 overflow-hidden mt-2 position-relative shadow-sm" style="height: 100px;">
-                                                <img src="<?php echo $url_bucket_evidencias . $nombre_foto; ?>" 
-                                                    class="w-100 h-100 object-fit-cover"
-                                                    onerror="this.parentElement.innerHTML='<div class=\"bg-warning-subtle text-warning small p-2 text-center\" style=\"height:100px\">Error al cargar de Google</div>'">
+                                                <img src="img/evidencias/<?php echo $ir['foto_evidencia']; ?>" class="w-100 h-100 object-fit-cover">
                                             </div>
                                         <?php else: ?>
-                                            <div class="bg-light rounded-3 d-flex flex-column align-items-center justify-content-center text-muted mt-2" style="height: 100px; border: 1px dashed #dee2e6;">
-                                                <i class="fa fa-camera-slash opacity-25 mb-1"></i>
-                                                <span style="font-size: 8px;">Sin registro</span>
+                                            <div class="bg-light rounded-3 d-flex align-items-center justify-content-center text-muted mt-2" style="height: 100px; border: 1px dashed #dee2e6;">
+                                                <i class="fa fa-camera-slash opacity-25"></i>
                                             </div>
                                         <?php endif; ?>
                                     </div>
@@ -191,7 +190,8 @@ include 'master/header.php';
                             </div>
 
                         <?php endwhile; ?>
-                        <?php if ($seccion_actual != "") echo '</div></div></div></div>'; ?>
+                        
+                        <?php if ($seccion_actual != "") echo '</div></div></div></div>'; // Cierre final ?>
                     </div>
 
                     <style>
