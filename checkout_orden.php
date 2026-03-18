@@ -116,24 +116,26 @@ include 'master/header.php';
                         </div>
                         <h5 class="fw-bold mb-0 text-dark">Inspección Técnica</h5>
                     </div>
+
                     <div class="accordion accordion-flush shadow-sm rounded-4 overflow-hidden mb-5" id="accordionInformeSistemas">
                         <?php
-                        // CONSULTA UNIDA: Resultados + Nombres y Secciones de Pasos
-                        $sql_ir = "SELECT ir.*, ip.descripcion_paso, ip.seccion_paso, ip.orden_paso 
-                                FROM inspeccion_resultados ir 
-                                INNER JOIN pasos_servicio ip ON ir.id_paso = ip.id_paso 
-                                WHERE ir.id_cita = '$id_cita' 
-                                ORDER BY ip.seccion_paso DESC, ip.orden_paso ASC";
+                        // 🚀 1. URL EXACTA DEL BUCKET (Basada en tu imagen de carpetas)
+                        $url_bucket_evidencias = "https://storage.googleapis.com/taller-dr-motors-storage/img/evidencias/";
+
+                        // 2. CONSULTA SQL
+                        $sql_ir = "SELECT ir.*, ip.descripcion_paso, ip.seccion_paso 
+                                    FROM inspeccion_resultados ir 
+                                    INNER JOIN pasos_servicio ip ON ir.id_paso = ip.id_paso 
+                                    WHERE ir.id_cita = '$id_cita' 
+                                    ORDER BY ip.seccion_paso ASC, ip.orden_paso ASC";
 
                         $res_ir = $db->ejecutar($sql_ir);
-                        
                         $seccion_actual = ""; 
-                        $i = 0; // Contador para IDs únicos del acordeón
+                        $i = 0; 
                         
                         while($ir = $db->recorrer($res_ir)):
-                            // Si la sección cambia, cerramos la anterior e iniciamos un nuevo item de acordeón
                             if ($seccion_actual != $ir['seccion_paso']): 
-                                if ($seccion_actual != "") echo '</div></div></div></div>'; // Cierra row, body, collapse e item
+                                if ($seccion_actual != "") echo '</div></div></div></div>'; 
                                 $seccion_actual = $ir['seccion_paso'];
                                 $i++;
                                 $target_id = "collapseSystem" . $i;
@@ -141,10 +143,7 @@ include 'master/header.php';
                             <div class="accordion-item border-bottom">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button <?php echo ($i > 1) ? 'collapsed' : ''; ?> fw-bold text-dark bg-white" 
-                                            type="button" 
-                                            data-bs-toggle="collapse" 
-                                            data-bs-target="#<?php echo $target_id; ?>" 
-                                            aria-expanded="<?php echo ($i == 1) ? 'true' : 'false'; ?>">
+                                            type="button" data-bs-toggle="collapse" data-bs-target="#<?php echo $target_id; ?>">
                                         <div class="d-flex align-items-center">
                                             <div class="bg-primary-subtle text-primary rounded-circle p-1 me-3 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
                                                 <i class="fa fa-microscope" style="font-size: 14px;"></i>
@@ -153,10 +152,7 @@ include 'master/header.php';
                                         </div>
                                     </button>
                                 </h2>
-                                
-                                <div id="<?php echo $target_id; ?>" 
-                                    class="accordion-collapse collapse <?php echo ($i == 1) ? 'show' : ''; ?>" 
-                                    data-bs-parent="#accordionInformeSistemas">
+                                <div id="<?php echo $target_id; ?>" class="accordion-collapse collapse <?php echo ($i == 1) ? 'show' : ''; ?>" data-bs-parent="#accordionInformeSistemas">
                                     <div class="accordion-body bg-light-subtle">
                                         <div class="row g-3">
                         <?php endif; ?>
@@ -168,21 +164,25 @@ include 'master/header.php';
                                             <span class="fw-bold text-dark" style="font-size: 11px; line-height: 1.2;">
                                                 <?php echo $ir['descripcion_paso']; ?>
                                             </span>
-                                            <?php 
-                                                $badge_class = ($ir['estado'] == 'OK') ? 'bg-success' : (($ir['estado'] == 'REGULAR') ? 'bg-warning text-dark' : 'bg-danger');
-                                            ?>
-                                            <span class="badge <?php echo $badge_class; ?> rounded-pill px-2 py-1" style="font-size: 8px;">
+                                            <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size: 8px;">
                                                 <?php echo $ir['estado']; ?>
                                             </span>
                                         </div>
 
-                                        <?php if($ir['foto_evidencia']): ?>
+                                        <?php 
+                                        // 🚀 3. VERIFICACIÓN ULTRA-SEGURA DEL NOMBRE DEL ARCHIVO
+                                        $nombre_foto = trim($ir['foto_evidencia']); // Quitamos espacios accidentales
+                                        if(!empty($nombre_foto) && $ir['estado'] != 'NO_TIENE'): 
+                                        ?>
                                             <div class="rounded-3 overflow-hidden mt-2 position-relative shadow-sm" style="height: 100px;">
-                                                <img src="img/evidencias/<?php echo $ir['foto_evidencia']; ?>" class="w-100 h-100 object-fit-cover">
+                                                <img src="<?php echo $url_bucket_evidencias . $nombre_foto; ?>" 
+                                                    class="w-100 h-100 object-fit-cover"
+                                                    onerror="this.parentElement.innerHTML='<div class=\"bg-warning-subtle text-warning small p-2 text-center\" style=\"height:100px\">Error al cargar de Google</div>'">
                                             </div>
                                         <?php else: ?>
-                                            <div class="bg-light rounded-3 d-flex align-items-center justify-content-center text-muted mt-2" style="height: 100px; border: 1px dashed #dee2e6;">
-                                                <i class="fa fa-camera-slash opacity-25"></i>
+                                            <div class="bg-light rounded-3 d-flex flex-column align-items-center justify-content-center text-muted mt-2" style="height: 100px; border: 1px dashed #dee2e6;">
+                                                <i class="fa fa-camera-slash opacity-25 mb-1"></i>
+                                                <span style="font-size: 8px;">Sin registro</span>
                                             </div>
                                         <?php endif; ?>
                                     </div>
@@ -190,8 +190,7 @@ include 'master/header.php';
                             </div>
 
                         <?php endwhile; ?>
-                        
-                        <?php if ($seccion_actual != "") echo '</div></div></div></div>'; // Cierre final ?>
+                        <?php if ($seccion_actual != "") echo '</div></div></div></div>'; ?>
                     </div>
 
                     <style>
@@ -257,7 +256,6 @@ include 'master/header.php';
                 </div>
 
                 <div class="col-lg-5">
-                    
                     <h6 class="text-dark fw-bold text-uppercase mb-3 small"><i class="fa fa-camera me-2 text-primary"></i>Registro Fotográfico de Ingreso</h6>
                     <div class="row g-2 mb-4">
                         <div class="col-4">
@@ -302,72 +300,8 @@ include 'master/header.php';
                             <?php endif; ?>
                         </div>
                     </div>
-
                 </div>
             </div>
-
-            <!-- <div class="row justify-content-end mt-5">
-                <div class="col-md-6 col-lg-5">
-                    <div class="p-4 rounded-4 bg-white border border-2 border-primary-subtle shadow-sm">
-                        <h6 class="fw-bold text-uppercase small mb-4 border-bottom pb-2 text-primary">Detalle de Liquidación</h6>
-                        
-                        <?php
-                        // 1. MANTO. BASE (Viene de la consulta maestra $d)
-                        $monto_servicio_base = $d['precio_base']; 
-                        
-                        // 2. CÁLCULO DE ADICIONALES (Repuestos + su propia Mano de Obra)
-                        $sql_extras = "SELECT pr.cantidad, pr.precio_unidad, p.precio_mano_obra, p.nombre_producto
-                                    FROM pedidos_repuestos pr
-                                    INNER JOIN productos p ON pr.id_producto = p.id_producto
-                                    WHERE pr.id_cita = '$id_cita' 
-                                    AND pr.estado_pedido IN ('RECIBIDO', 'SOLICITADO POR CLIENTE')
-                                    AND pr.precio_unidad > 0"; // Solo los que tienen precio (los adicionales)
-
-                        $res_extras = $db->ejecutar($sql_extras);
-                        $total_repuestos_extra = 0;
-                        $total_mano_obra_extra = 0;
-                        $detalles_html = "";
-
-                        while($extra = $db->recorrer($res_extras)){
-                            $sub_repuesto = $extra['cantidad'] * $extra['precio_unidad'];
-                            $sub_mo_extra = $extra['cantidad'] * $extra['precio_mano_obra'];
-                            
-                            $total_repuestos_extra += $sub_repuesto;
-                            $total_mano_obra_extra += $sub_mo_extra;
-
-                            // Guardamos el detalle para mostrarlo en el reporte
-                            $detalles_html .= '
-                            <div class="d-flex justify-content-between mb-1 x-small text-muted ps-2">
-                                <span>+ '.$extra['nombre_producto'].' (Cant: '.$extra['cantidad'].')</span>
-                                <span>S/ '.number_format($sub_repuesto + $sub_mo_extra, 2).'</span>
-                            </div>';
-                        }
-
-                        $gran_total = $monto_servicio_base + $total_repuestos_extra + $total_mano_obra_extra;
-                        ?>
-
-                        <div class="d-flex justify-content-between mb-3 small fw-bold">
-                            <span>Servicio: <?php echo $d['nombre_servicio']; ?></span>
-                            <span>S/ <?php echo number_format($monto_servicio_base, 2); ?></span>
-                        </div>
-
-                        <?php if($total_repuestos_extra > 0): ?>
-                            <small class="text-uppercase fw-bold text-muted d-block mb-2" style="font-size: 9px;">Adicionales (Repuesto + Instalación):</small>
-                            <?php echo $detalles_html; ?>
-                            <div class="border-top my-2"></div>
-                        <?php endif; ?>
-
-                        <div class="d-flex justify-content-between align-items-center pt-2">
-                            <span class="h5 fw-black mb-0">TOTAL NETO:</span>
-                            <span class="h2 fw-black text-primary mb-0">S/ <?php echo number_format($gran_total, 2); ?></span>
-                        </div>
-                        
-                        <div class="mt-3 p-2 bg-light rounded-3 border text-center" style="font-size: 10px;">
-                            <i class="fa fa-info-circle text-primary me-1"></i> El costo incluye repuestos adicionales y mano de obra de instalación.
-                        </div>
-                    </div>
-                </div>
-            </div> -->
         </div>
     </div>
 </div>
