@@ -1,9 +1,15 @@
 <?php
+// Poo/guardar_orden_hallazgo.php
 session_start();
+
+// 📂 CARGAMOS LIBRERÍAS DE GOOGLE
+require __DIR__ . '/../vendor/autoload.php'; 
+use Google\Cloud\Storage\StorageClient;
+
 require_once "Conexion.php";
 $db = new Conexion();
 
-// Reporte de errores para desarrollo
+// Reporte de errores
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -22,33 +28,42 @@ try {
     $p_obra   = !empty($_POST['precio_mano_obra']) ? $_POST['precio_mano_obra'] : 0;
     $cantidad = !empty($_POST['cantidad']) ? $_POST['cantidad'] : 1;
 
-    // 1. GESTIÓN DE FOTO
+    // --- ☁️ CONFIGURACIÓN DE CLOUD STORAGE ---
+    $nombreBucket = 'taller-dr-motors-storage';
+    $storage = new StorageClient(); // Credenciales automáticas en Cloud Run
+    $bucket = $storage->bucket($nombreBucket);
+    $carpetaDestino = "img/hallazgos/"; // 👈 Tu nueva carpeta organizada
+
+    // 1. GESTIÓN DE FOTO EN EL BUCKET
     $nombre_foto = null;
     if (isset($_FILES['foto_falla']) && $_FILES['foto_falla']['error'] === UPLOAD_ERR_OK) {
-        $directorio = "../img/evidencias/";
-        if (!file_exists($directorio)) { mkdir($directorio, 0777, true); }
-
+        
         $ext = pathinfo($_FILES['foto_falla']['name'], PATHINFO_EXTENSION);
         $nombre_foto = "falla_" . $id_orden . "_" . time() . "." . $ext;
         
-        if (!move_uploaded_file($_FILES['foto_falla']['tmp_name'], $directorio . $nombre_foto)) {
-            throw new Exception("No se pudo guardar la imagen.");
+        // 🚀 SUBIDA DIRECTA AL BUCKET
+        try {
+            $fileStream = fopen($_FILES['foto_falla']['tmp_name'], 'r');
+            $bucket->upload($fileStream, [
+                'name' => $carpetaDestino . $nombre_foto
+            ]);
+        } catch (Exception $e) {
+            throw new Exception("Error al subir al Bucket: " . $e->getMessage());
         }
     }
 
-    // 2. INSERTAR EL HALLAZGO
+    // 2. INSERTAR EL HALLAZGO EN DB
     $sql = "INSERT INTO orden_hallazgos (
                 id_orden, id_cita, punto_falla, descripcion, 
                 id_producto, cantidad, precio_producto, precio_mano_obra, foto_evidencia
             ) VALUES (
                 '$id_orden', '$id_cita', '$punto', '$desc', 
-                $id_prod, '$cantidad', '$p_venta', '$p_obra', '$nombre_foto'
+                $id_prod, '$cantidad', '$p_venta', '$p_obra', " . ($nombre_foto ? "'$nombre_foto'" : "NULL") . "
             )";
 
     if ($db->ejecutar($sql)) {
         
-        // 🚀 3. LÓGICA DE REDIRECCIÓN MAESTRA
-        // Buscamos el tipo_raiz del servicio que originó la cita
+        // 3. LÓGICA DE REDIRECCIÓN
         $sql_tipo = "SELECT s.tipo_raiz 
                      FROM citas ci 
                      INNER JOIN servicios s ON ci.id_servicio = s.id_servicio 
@@ -56,16 +71,9 @@ try {
         
         $res_tipo = $db->ejecutar($sql_tipo);
         $dato_serv = $db->recorrer($res_tipo);
-        $tipo_raiz = $dato_serv['tipo_raiz'] ?? 'MANTENIMIENTO'; // Valor por defecto
+        $tipo_raiz = $dato_serv['tipo_raiz'] ?? 'MANTENIMIENTO';
 
-        // Definimos la ruta según el tipo de servicio
-        // Sinceramente, si es DIAGNOSTICO va a una página, si es MANTENIMIENTO a otra
-        if ($tipo_raiz === 'DIAGNOSTICO') {
-            $url_retorno = "../ejecucion_diagnostico.php";
-        } else {
-            // MANTENIMIENTO (Menor, Mayor, Gama Alta, etc) regresan aquí
-            $url_retorno = "../gestion_taller.php";
-        }
+        $url_retorno = ($tipo_raiz === 'DIAGNOSTICO') ? "../ejecucion_diagnostico.php" : "../gestion_taller.php";
 
         header("Location: $url_retorno?id_cita=$id_cita&res=hallazgo_guardado");
         exit();
