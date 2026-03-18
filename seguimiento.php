@@ -108,6 +108,9 @@ $porcentaje_general = ($total_general > 0) ? round(($listos_general / $total_gen
 
     <div class="accordion accordion-flush shadow-sm rounded-4 overflow-hidden" id="accordionInspeccion">
         <?php
+        // 🚀 1. DEFINIMOS LA RUTA BASE DEL BUCKET
+        $url_bucket_evidencias = "https://storage.googleapis.com/taller-dr-motors-storage/img/evidencias/";
+
         $sql_res = "SELECT p.seccion_paso, p.descripcion_paso, r.estado, r.foto_evidencia
                     FROM pasos_servicio p
                     LEFT JOIN inspeccion_resultados r ON p.id_paso = r.id_paso AND r.id_cita = '$id_cita'
@@ -120,12 +123,11 @@ $porcentaje_general = ($total_general > 0) ? round(($listos_general / $total_gen
 
         while($r = $db->recorrer($res_puntos)):
             if($r['seccion_paso'] != $seccion_actual):
-                // Si no es la primera sección, cerramos los divs de la sección anterior
                 if($seccion_actual != "") echo '</div></div></div>'; 
                 
                 $seccion_actual = $r['seccion_paso'];
-                $porc_area = $progreso_por_area[$seccion_actual];
-                $id_collapse = "collapse_" . $contador; // ID único para cada acordeón
+                $porc_area = $progreso_por_area[$seccion_actual] ?? 0;
+                $id_collapse = "collapse_" . $contador; 
         ?>
                 <div class="accordion-item border-bottom">
                     <h2 class="accordion-header">
@@ -152,6 +154,9 @@ $porcentaje_general = ($total_general > 0) ? round(($listos_general / $total_gen
             if($r['estado'] == 'OK') { $color = 'success'; $icon = 'fa-check-circle'; }
             elseif($r['estado'] == 'REGULAR') { $color = 'warning'; $icon = 'fa-exclamation-circle'; }
             elseif($r['estado'] == 'MAL') { $color = 'danger'; $icon = 'fa-times-circle'; }
+            
+            // Preparamos la URL completa de la imagen si existe
+            $url_foto_final = !empty($r['foto_evidencia']) ? $url_bucket_evidencias . $r['foto_evidencia'] : null;
         ?>
             <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-white mx-2 my-1 rounded-3 shadow-sm">
                 <div style="flex: 1;" class="pe-3">
@@ -161,10 +166,11 @@ $porcentaje_general = ($total_general > 0) ? round(($listos_general / $total_gen
                     </span>
                 </div>
                 <div>
-                    <?php if(!empty($r['foto_evidencia'])): ?>
-                        <img src="img/evidencias/<?php echo $r['foto_evidencia']; ?>" 
-                            class="img-evidencia" 
-                            onclick="abrirImagen('img/evidencias/<?php echo $r['foto_evidencia']; ?>', '<?php echo addslashes($r['descripcion_paso']); ?>')">
+                    <?php if($url_foto_final): ?>
+                        <img src="<?php echo $url_foto_final; ?>" 
+                            class="img-evidencia rounded-3 shadow-sm" 
+                            style="width:50px; height:50px; object-fit: cover; cursor: pointer;"
+                            onclick="abrirImagen('<?php echo $url_foto_final; ?>', '<?php echo addslashes($r['descripcion_paso']); ?>')">
                     <?php else: ?>
                         <div class="bg-light rounded-3 d-flex align-items-center justify-content-center" style="width:50px; height:50px; border: 1px dashed #ccc;">
                             <i class="fa fa-camera text-muted opacity-25"></i>
@@ -173,7 +179,7 @@ $porcentaje_general = ($total_general > 0) ? round(($listos_general / $total_gen
                 </div>
             </div>
         <?php endwhile; ?>
-        <?php if($seccion_actual != "") echo '</div></div></div>'; // Cierre de la última sección ?>
+        <?php if($seccion_actual != "") echo '</div></div></div>'; ?>
     </div>
 
     <div class="text-center mt-4 pb-5">
