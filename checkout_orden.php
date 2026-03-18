@@ -191,7 +191,9 @@ include 'master/header.php';
                                 </div>
                             </div>
 
-                        <?php endwhile; ?>
+                        <?php endwhile; 
+                        echo "<pre>"; print_r($ir); echo "</pre>"; die();
+                        ?>
                         
                         <?php if ($seccion_actual != "") echo '</div></div></div></div>'; ?>
                     </div>
