@@ -15,11 +15,7 @@ try {
 
     // 1. OBTENER DATOS Y CALCULAR STOCK REAL (ENTRADAS - SALIDAS)
     // Sinceramente, aquí calculamos la "verdad" del almacén en tiempo real
-    $sql_p = "SELECT pr.*, p.precio_venta, v.placa,
-              (
-                (SELECT COALESCE(SUM(cantidad), 0) FROM inventario_movimientos WHERE id_producto = pr.id_producto AND tipo_movimiento = 'ENTRADA') - 
-                (SELECT COALESCE(SUM(cantidad), 0) FROM inventario_movimientos WHERE id_producto = pr.id_producto AND tipo_movimiento = 'SALIDA')
-              ) as stock_real
+    $sql_p = "SELECT pr.*, p.precio_venta, p.stock_actual, v.placa
               FROM pedidos_repuestos pr
               JOIN productos p ON pr.id_producto = p.id_producto
               JOIN citas ci ON pr.id_cita = ci.id_cita
@@ -35,7 +31,7 @@ try {
     $cantidad  = $data['cantidad'];
     $id_cita   = $data['id_cita'];
     $placa     = $data['placa'];
-    $stock_disponible = $data['stock_real']; // Usamos el cálculo real
+    $stock_disponible = $data['stock_actual']; // 👈 Usamos el stock real que ya tienes
     $precio_un = ($data['precio_unidad'] > 0) ? $data['precio_unidad'] : $data['precio_venta'];
 
     $db->conexion->begin_transaction();
