@@ -4,7 +4,9 @@ ini_set('memory_limit', '1024M');
 set_time_limit(0); 
 
 ob_start();
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // ✅ CARGA DE LIBRERÍAS
 require_once __DIR__ . '/vendor/autoload.php'; 
