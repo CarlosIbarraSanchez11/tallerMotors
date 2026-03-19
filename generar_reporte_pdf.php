@@ -72,259 +72,35 @@ $foto_t = imagenBase64($url_ordenes . $d['foto_tablero']);
 <head>
 <meta charset="UTF-8">
 <style>
-    
-    /* Marino oscuro:   #0d1b3e
-       Azul acento:     #2563eb
-       Gris pizarra:    #475569
-       Fondo suave:     #f1f5f9
-       Borde delicado:  #cbd5e1
-       Verde OK:        #16a34a
-       Rojo alerta:     #dc2626 */
-
-    @page { margin: 2.8cm 2.6cm 2.5cm 2.6cm; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-        font-family: 'Arial Black', 'Archivo Black', sans-serif;
-        font-size: 11px;
-        color: #1e293b;
-        background: #f4f6f7de;
-        line-height: 1.65;
-    }
-
-    .wrapper {
-        background: #fff;
-        max-width: 860px;
-        margin: 50px auto 60px;
-        padding: 50px 54px;
-        box-shadow: 0 8px 36px rgba(13,27,62,0.13);
-        border-radius: 8px;
-    }
-
-    .page-break { page-break-before: always; }
-
-    /* ══════════════════════════════════════════
-       HEADER
-    ══════════════════════════════════════════ */
-    .header {
-        width: 100%;
-        border-bottom: 3px solid #0d1b3e;
-        padding-bottom: 14px;
-        margin-bottom: 28px;
-    }
-    .header td { vertical-align: middle; }
-
-    .brand-wrap { display: flex; align-items: center; gap: 12px; }
-
-    .logo-img {
-        height: 54px;
-        width: auto;
-        object-fit: contain;
-        display: block;
-    }
-
-    .brand-text { display: inline-block; }
-    .brand {
-        font-family: 'Monaco', 'Lucida Console', monospace;
-        font-size: 34px;
-        font-weight: 900;
-        color: #0d1b3e;
-        letter-spacing: -1px;
-        line-height: 1;
-    }
-    .brand span { color: #2563eb; font-weight: 400; }
-    .brand-sub {
-        font-size: 8px;
-        letter-spacing: 4px;
-        text-transform: uppercase;
-        color: #2563eb;
-        margin-top: 4px;
-    }
-
-    .doc-meta { text-align: right; }
-    .doc-title {
-        font-size: 20px;
-        font-weight: 800;
-        color: #0d1b3e;
-        letter-spacing: 0.5px;
-    }
-    .doc-date {
-        font-size: 12px;
-        font-weight: 800;
-        color: #64748b;
-        margin-top: 3px;
-        line-height: 1.7;
-    }
-    .order-badge {
-        display: inline-block;
-        background: #0d1b3e;
-        font-weight: 800;
-        color: #fff;
-        padding: 4px 14px;
-        border-radius: 5px;
-        font-size: 12px;
-        font-weight: 700;
-        margin-top: 6px;
-        letter-spacing: 0.5px;
-    }
-
-    /* ══════════════════════════════════════════
-       FICHA VEHÍCULO
-    ══════════════════════════════════════════ */
-    .summary-grid { width: 100%; border-collapse: separate; border-spacing: 8px; margin-bottom: 22px; }
-    .summary-item {
-        background: #f8fafc;
-        border: 1px solid #cbd5e1;
-        padding: 13px 15px;
-        border-radius: 10px;
-    }
-    .s-label {
-        font-size: 8px;
-        color: #94a3b8;
-        text-transform: uppercase;
-        font-weight: 800;
-        letter-spacing: 1px;
-        margin-bottom: 4px;
-    }
-    .s-value { font-size: 12px; font-weight: 700; color: #1e293b; }
-
-    /* ══════════════════════════════════════════
-       SECTION BAR
-    ══════════════════════════════════════════ */
-    .section-bar {
-        background: #0d1b3e;
-        color: #fff;
-        padding: 10px 22px 10px 54px;
-        font-size: 12px;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        border-radius: 0 28px 28px 0;
-        margin: 40px 0 10px -54px;
-        width: calc(62% + 54px);
-    }
-
-    .sub-system-bar {
-        background: #f1f5f9;
-        border-left: 5px solid #2563eb;
-        padding: 7px 14px;
-        font-weight: 700;
-        color: #0d1b3e;
-        text-transform: uppercase;
-        margin: 20px 0 10px;
-        font-size: 10px;
-        letter-spacing: 0.8px;
-        border-radius: 0 5px 5px 0;
-    }
-
-    /* ══════════════════════════════════════════
-       CARDS DE FOTOS
-    ══════════════════════════════════════════ */
-    .photo-table { width: 100%; border-collapse: separate; border-spacing: 14px; }
-    .photo-cell  { width: 33.33%; vertical-align: top; }
-    .card {
-        background: #fff;
-        border: 1px solid #cbd5e1;
-        border-radius: 12px;
-        overflow: hidden;
-        page-break-inside: avoid;
-        box-shadow: 0 2px 10px rgba(13,27,62,0.06);
-    }
-    .card img { width: 100%; height: 140px; object-fit: cover; display: block; }
-    .card-footer {
-        padding: 9px 10px;
-        text-align: center;
-        border-top: 1px solid #e2e8f0;
-        background: #fafbfc;
-    }
-    .card-desc {
-        font-weight: 700;
-        color: #334155;
-        font-size: 9px;
-        letter-spacing: 0.5px;
-        margin-bottom: 5px;
-        text-transform: uppercase;
-    }
-
-    /* ══════════════════════════════════════════
-       STATUS PILLS
-    ══════════════════════════════════════════ */
-    .pill {
-        display: inline-block;
-        padding: 3px 12px;
-        border-radius: 20px;
-        font-size: 8px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-    }
-    .pill-ok   { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
-    .pill-fail { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
-
-    /* ══════════════════════════════════════════
-       CERTIFICADO CALIDAD
-    ══════════════════════════════════════════ */
-    .quality-box {
-        background: #f0f6ff;
-        border: 1px solid #bfdbfe;
-        border-radius: 16px;
-        padding: 22px 24px;
-        margin-top: 28px;
-    }
-    .quality-title {
-        font-weight: 700;
-        color: #0d1b3e;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        border-bottom: 2px solid #bfdbfe;
-        padding-bottom: 6px;
-        display: inline-block;
-        margin-bottom: 10px;
-    }
-    .quality-items {
-        font-size: 10.5px;
-        color: #334155;
-        line-height: 1.9;
-    }
-    .cert-badge {
-        display: inline-block;
-        background: #dcfce7;
-        color: #16a34a;
-        border: 1px solid #86efac;
-        font-size: 11px;
-        font-weight: 700;
-        padding: 9px 22px;
-        border-radius: 10px;
-        letter-spacing: 0.5px;
-    }
-    .wash-img {
-        width: 40%;
-        height: 100px;
-        object-fit: cover;
-        border-radius: 12px;
-        border: 4px solid #fff;
-        box-shadow: 0 4px 14px rgba(13,27,62,0.10);
-        margin-top: 16px;
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    /* ══════════════════════════════════════════
-       FOOTER PDF
-    ══════════════════════════════════════════ */
-    .footer {
-        position: fixed;
-        bottom: -15px;
-        width: 100%;
-        text-align: center;
-        font-size: 8px;
-        color: #94a3b8;
-        border-top: 1px solid #e2e8f0;
-        padding-top: 8px;
-        letter-spacing: 1px;
-    }
-</style>
+        @page { margin: 1cm; }
+        body { font-family: 'Helvetica', sans-serif; color: #333; font-size: 12px; line-height: 1.4; }
+        .header { width: 100%; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .logo-img { width: 150px; height: auto; }
+        .doc-title { font-size: 18px; font-weight: bold; color: #0d1b3e; text-align: right; }
+        .doc-meta { text-align: right; font-size: 10px; color: #666; }
+        .order-badge { display: inline-block; background: #0d1b3e; color: #fff; padding: 5px 12px; border-radius: 4px; font-weight: bold; margin-top: 5px; }
+        .section-bar { background: #0d1b3e; color: #fff; padding: 8px 15px; font-weight: bold; border-radius: 30px; margin: 20px 0; text-transform: uppercase; font-size: 11px; }
+        .summary-grid { width: 100%; margin-bottom: 20px; border: 1px solid #eee; border-radius: 10px; }
+        .summary-item { padding: 10px; border-right: 1px solid #eee; }
+        .s-label { font-size: 9px; text-transform: uppercase; color: #999; font-weight: bold; }
+        .s-value { font-size: 12px; font-weight: bold; color: #333; }
+        .photo-table { width: 100%; margin-bottom: 15px; }
+        .photo-cell { width: 33.33%; padding: 5px; vertical-align: top; }
+        .card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: #fff; }
+        .card img { width: 100%; height: 140px; object-fit: cover; display: block; }
+        .card-footer { padding: 8px; background: #f9f9f9; text-align: center; border-top: 1px solid #eee; }
+        .card-desc { font-size: 9px; font-weight: bold; color: #555; text-transform: uppercase; }
+        .pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 8px; font-weight: bold; margin-top: 4px; }
+        .pill-ok { background: #e8f5e9; color: #2e7d32; }
+        .pill-fail { background: #ffebee; color: #c62828; }
+        .quality-box { background: #f0f7ff; border: 1px solid #d0e3ff; border-radius: 12px; padding: 15px; margin-top: 20px; }
+        .quality-title { color: #0d1b3e; font-weight: bold; margin-bottom: 10px; }
+        .cert-badge { background: #e8f5e9; color: #2e7d32; padding: 5px 15px; border-radius: 6px; font-weight: bold; border: 1px solid #c8e6c9; }
+        .wash-img { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-top: 10px; }
+        .sub-system-bar { background: #f8f9fa; border-left: 4px solid #2563eb; padding: 5px 10px; font-weight: bold; font-size: 11px; margin: 15px 0 10px 0; color: #0d1b3e; }
+        .footer { position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 9px; color: #999; border-top: 1px solid #eee; padding-top: 5px; }
+        .page-break { page-break-after: always; }
+    </style>
 </head>
 <body>
 
