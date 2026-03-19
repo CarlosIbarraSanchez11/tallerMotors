@@ -1,5 +1,6 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+
 require __DIR__ . '/../vendor/autoload.php'; 
 use Google\Cloud\Storage\StorageClient;
 
@@ -13,27 +14,27 @@ if ($_POST) {
     $id_cita = mysqli_real_escape_string($db->conexion, $_POST['id_cita']);
     $id_orden = mysqli_real_escape_string($db->conexion, $_POST['id_orden']);
     
-    // 1. SUBIR FOTO DE LAVADO (Tu lógica de siempre)
+    // 1. CONFIGURACIÓN BUCKET
     $nombreBucket = 'taller-dr-motors-storage';
     $storage = new StorageClient(); 
     $bucket = $storage->bucket($nombreBucket);
     $nombre_foto = "";
 
+    // Subir foto de lavado
     if (!empty($_FILES['foto_lavado']['name'])) {
         $ext = pathinfo($_FILES['foto_lavado']['name'], PATHINFO_EXTENSION);
         $nombre_foto = "final_" . $id_orden . "_" . time() . "." . $ext;
         $bucket->upload(fopen($_FILES['foto_lavado']['tmp_name'], 'r'), ['name' => "img/lavado/" . $nombre_foto]);
     }
 
-    // 🚀 2. "LLAMAR" AL REPORTE DE 300 LÍNEAS
-    // Sinceramente, aquí hacemos la magia:
-    $_GET['id_cita'] = $id_cita; // Le pasamos el ID como si viniera por URL
-    $generar_para_bucket = true; // Activamos el modo "silencioso" que pusimos en el paso 1
+    // 🚀 2. GENERAR PDF (Usando tu archivo de 300 líneas)
+    $_GET['id_cita'] = $id_cita; 
+    $generar_para_bucket = true; 
     
+    // Al incluirlo, heredamos la variable $d con los datos del cliente y el PDF en $pdf_final_contenido
     include "../generar_reporte_pdf.php"; 
-    // Ahora, gracias al include, tenemos disponible la variable $pdf_final_contenido
     
-    // 3. SUBIR EL PDF AL BUCKET
+    // 3. SUBIR PDF AL BUCKET
     $nombre_pdf = "Expediente_OT_" . $id_orden . ".pdf";
     if (isset($pdf_final_contenido)) {
         $bucket->upload($pdf_final_contenido, [
@@ -51,7 +52,22 @@ if ($_POST) {
 
     $db->ejecutar("UPDATE citas SET estado = 'POR ENTREGAR' WHERE id_cita = '$id_cita'");
 
-    // 5. REDIRECCIÓN
+    // 🚀 5. ENVIAR NOTIFICACIÓN WHATSAPP (¡Aquí está lo que faltaba!)
+    // Sinceramente, usamos los datos de $d que vienen del include del reporte
+    if (isset($d)) {
+        $nombre_cliente = explode(' ', $d['nombre_completo'])[0];
+        
+        // Enviamos el template de entrega
+        enviarTemplateEntregaVehiculo(
+            $d['telefono'], 
+            $nombre_cliente, 
+            $d['placa'], 
+            $id_cita, 
+            $d['token_confirmacion']
+        );
+    }
+
+    // 6. REDIRECCIÓN
     header("Location: ../citas.php?res=finalizado");
     exit();
 }
