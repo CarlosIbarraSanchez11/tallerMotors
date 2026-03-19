@@ -289,5 +289,12 @@ $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
 
-$dompdf->stream("Expediente_DrMotors_".$d['placa'].".pdf", ["Attachment" => false]);
+// 🚀 EL "TRUCO" PARA QUE SEA HÍBRIDO:
+if (isset($generar_para_bucket) && $generar_para_bucket === true) {
+    // Si venimos de guardar_lavado, solo guardamos el contenido en esta variable
+    $pdf_final_contenido = $dompdf->output();
+} else {
+    // Si entramos normal por URL, se descarga como siempre
+    $dompdf->stream("Expediente_".$d['placa'].".pdf", ["Attachment" => false]);
+}
 ?>
