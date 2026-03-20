@@ -55,16 +55,18 @@ if ($_POST) {
     // 🚀 5. ENVIAR NOTIFICACIÓN WHATSAPP (¡Aquí está lo que faltaba!)
     // Sinceramente, usamos los datos de $d que vienen del include del reporte
     if (isset($d)) {
-        $nombre_cliente = explode(' ', $d['nombre_completo'])[0];
-        
-        // Enviamos el template de entrega
-        enviarTemplateEntregaVehiculo(
-            $d['telefono'], 
-            $nombre_cliente, 
-            $d['placa'], 
-            $id_cita, 
-            $d['token_confirmacion']
-        );
+        $nombre_cliente = explode(' ', $d['nombre_completo'] ?? 'Cliente')[0];
+        $num_whatsapp = $d['telefono'] ?? ''; // Coalescencia nula para evitar el error
+
+        if (!empty($num_whatsapp)) {
+            enviarTemplateEntregaVehiculo(
+                $num_whatsapp, 
+                $nombre_cliente, 
+                $d['placa'] ?? 'S/P', 
+                $id_cita, 
+                $d['token_confirmacion'] ?? ''
+            );
+        }
     }
 
     // 6. REDIRECCIÓN

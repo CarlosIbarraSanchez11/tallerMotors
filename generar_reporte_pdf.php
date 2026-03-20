@@ -48,7 +48,7 @@ function txt($texto) {
 }
 
 // 4. CONSULTA DE DATOS PRINCIPAL
-$sql = "SELECT ci.*, v.placa, v.marca, v.modelo, cl.nombre_completo,
+$sql = "SELECT ci.*, v.placa, v.marca, v.modelo, cl.nombre_completo, cl.telefono, 
                ot.id_orden, ot.km_ingreso, ot.nivel_combustible,
                ot.foto_frontal, ot.foto_posterior, ot.foto_tablero, ot.foto_lavado,
                s.nombre_servicio
