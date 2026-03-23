@@ -191,6 +191,10 @@ if (isset($db)) {
             <?php if(in_array($nivel, ['ADMINISTRADOR', 'CALL CENTER'])): ?>
                 <a href="verificar.php" class="nav-link"><i class="fa fa-qrcode me-2"></i> <span class="nav-text">Escaner QR</span></a>
                 <a href="clientes.php" class="nav-link"><i class="fa fa-user-group me-2"></i> <span class="nav-text">Clientes</span></a>
+                <a href="reporte_pdf.php" class="nav-link">
+                    <i class="fa fa-history me-2"></i> 
+                    <span class="nav-text">Historial</span>
+                </a>
             <?php endif; ?>
 
             <?php if(in_array($nivel, ['ADMINISTRADOR', 'JEFE'])): ?>
